@@ -186,6 +186,7 @@ class StudentController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6',
             'phone' => 'required|string|max:20',
             'nic_number' => 'required|string|max:20|unique:students,nic_number',
             'date_of_birth' => 'required|date|before:today',
@@ -193,6 +194,7 @@ class StudentController extends Controller
             'address' => 'nullable|string',
             'batch_id' => 'required|exists:batches,id',
             'current_semester_id' => 'required|exists:semesters,id',
+            'avatar' => 'nullable|image|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -206,12 +208,18 @@ class StudentController extends Controller
             $count = Student::where('batch_id', $request->batch_id)->count() + 1;
             $regNumber = sprintf('ATI/HNDIT/%d/%03d', $year, $count);
 
+            $avatarPath = null;
+            if ($request->hasFile('avatar')) {
+                $avatarPath = $request->file('avatar')->store('avatars', 'public');
+            }
+
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
-                'password' => Hash::make(Str::random(10)),
+                'password' => Hash::make($request->password),
                 'role' => 'student',
                 'phone' => $request->phone,
+                'avatar' => $avatarPath,
                 'is_active' => false,
             ]);
 

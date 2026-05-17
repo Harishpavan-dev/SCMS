@@ -198,6 +198,9 @@ class AttendanceController extends Controller
             'status' => 'present',
         ]);
 
+        // Send Notification
+        $this->notifyStudentAttendance($record);
+
         return response()->json([
             'success' => true,
             'message' => 'Attendance marked successfully.',
@@ -244,7 +247,7 @@ class AttendanceController extends Controller
                 ->exists();
 
             if (!$exists) {
-                AttendanceRecord::create([
+                $record = AttendanceRecord::create([
                     'attendance_session_id' => $session->id,
                     'student_id' => $studentId,
                     'marked_at' => now(),
@@ -252,6 +255,7 @@ class AttendanceController extends Controller
                     'method' => 'rep',
                     'status' => 'present',
                 ]);
+                $this->notifyStudentAttendance($record);
                 $marked++;
             } else {
                 $skipped++;
@@ -440,6 +444,8 @@ class AttendanceController extends Controller
             'status' => 'present',
         ]);
 
+        $this->notifyStudentAttendance($record);
+
         return response()->json([
             'success' => true,
             'message' => "Attendance marked for {$student->user->name}.",
@@ -490,6 +496,11 @@ class AttendanceController extends Controller
             $record->update(['status' => $status]);
         }
 
+        // Send Push Notification
+        if ($status !== 'unmarked') {
+            $this->notifyStudentAttendance($record);
+        }
+
         // WhatsApp Notification Trigger (Mock)
         if ($status !== 'unmarked') {
             $this->sendWhatsAppNotification($record);
@@ -527,6 +538,10 @@ class AttendanceController extends Controller
             ]
         );
 
+        if ($request->status !== 'unmarked') {
+            $this->notifyStudentAttendance($record);
+        }
+
         return response()->json([
             'success' => true,
             'message' => "Attendance status updated to {$request->status}.",
@@ -547,8 +562,35 @@ class AttendanceController extends Controller
         // Log for demonstration
         \Illuminate\Support\Facades\Log::info("WhatsApp Notification sent to {$user->phone}: {$message}");
         
-        // In a real app, use Twilio or UltraMsg here:
+    // In a real app, use Twilio or UltraMsg here:
         // Http::post('https://api.whatsapp.com/send', [...]);
+    }
+
+    protected function notifyStudentAttendance(AttendanceRecord $record)
+    {
+        try {
+            $student = $record->student->load('user');
+            $session = $record->attendanceSession->load('classSession.subject');
+            $subjectName = $session->classSession->subject->name;
+            $status = strtoupper($record->status);
+
+            $title = "Attendance Update: {$subjectName}";
+            $body = "Hi {$student->user->name}, your attendance for {$subjectName} today has been marked as {$status}.";
+
+            \App\Jobs\SendPushNotification::dispatch(
+                $student->user_id,
+                $title,
+                $body,
+                [
+                    'type' => 'attendance_update',
+                    'record_id' => $record->id,
+                    'status' => $record->status,
+                    'subject' => $subjectName
+                ]
+            );
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to queue attendance notification: " . $e->getMessage());
+        }
     }
 
     public function getHodAnalytics(Request $request): JsonResponse

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import useAuthStore from './stores/authStore';
+import useNotifications from './hooks/useNotifications';
 
 // Layouts
 import { ProtectedLayout } from './layouts/ProtectedLayout';
@@ -39,6 +40,9 @@ const PlaceholderPage = ({ title }) => (
 function App() {
   const { isAuthenticated, checkAuth } = useAuthStore();
   const [init, setInit] = useState(false);
+
+  // Initialize notifications
+  useNotifications();
 
   useEffect(() => {
     checkAuth().finally(() => setInit(true));

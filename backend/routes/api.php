@@ -26,6 +26,7 @@ Route::middleware(\App\Http\Middleware\JWTAuth::class)->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
     Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
+    Route::post('/fcm/token', [ResourceController::class, 'saveFcmToken']);
     
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index']);

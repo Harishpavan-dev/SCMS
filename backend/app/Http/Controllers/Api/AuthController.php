@@ -153,9 +153,9 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $user->id,
-            'phone' => 'sometimes|string|max:20',
-            'avatar_base64' => 'sometimes|string',
-            'address' => 'sometimes|string',
+            'phone' => 'sometimes|nullable|string|max:20',
+            'avatar_base64' => 'sometimes|nullable|string',
+            'address' => 'sometimes|nullable|string',
         ]);
 
         if ($validator->fails()) {

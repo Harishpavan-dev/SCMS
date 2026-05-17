@@ -280,4 +280,20 @@ class ResourceController extends Controller
         $user->update(['is_active' => !$user->is_active]);
         return response()->json(['success' => true, 'data' => $user]);
     }
+
+    // ========== FCM TOKENS ==========
+    public function saveFcmToken(Request $request): JsonResponse
+    {
+        $request->validate([
+            'token' => 'required|string',
+            'device_type' => 'nullable|string'
+        ]);
+
+        $request->user()->fcmTokens()->updateOrCreate(
+            ['token' => $request->token],
+            ['device_type' => $request->device_type ?? 'web']
+        );
+
+        return response()->json(['success' => true, 'message' => 'FCM Token saved.']);
+    }
 }
