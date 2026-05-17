@@ -71,57 +71,59 @@ export const RepAttendancePage = () => {
   }, [activeTab, historyDate, historySubjectId, historyPeriod]);
 
   const fetchSubjects = async () => {
+    if (subjects.length > 0 && user?.student?.current_semester_id === subjects[0].semester_id) return;
+
     try {
-      // Try current semester first, fallback to all subjects
       const semesterId = user?.student?.current_semester_id;
-      let subData = [];
       
+      // Parallelize both attempts to avoid serial delay
+      const promises = [api.get('/subjects')];
       if (semesterId) {
-        const response = await api.get(`/semesters/${semesterId}/subjects`);
-        subData = response.data.data || [];
+        promises.push(api.get(`/semesters/${semesterId}/subjects`));
       }
+
+      const results = await Promise.all(promises);
+      const allSubjects = results[0].data.data || [];
+      const semesterSubjects = results[1]?.data.data || [];
+
+      // Use semester subjects if available, otherwise fallback
+      const finalData = semesterSubjects.length > 0 ? semesterSubjects : allSubjects;
       
-      // If no subjects found for current semester, fetch from all semesters
-      if (subData.length === 0) {
-        const semRes = await api.get('/public/semesters');
-        const allSemesters = semRes.data.data || [];
-        
-        // Fetch all subject lists in parallel to avoid slow loading
-        const subjectPromises = allSemesters.map(sem => api.get(`/semesters/${sem.id}/subjects`));
-        const responses = await Promise.all(subjectPromises);
-        
-        // Combine all and flatten
-        subData = responses.flatMap(res => res.data.data || []);
-      }
-      
-      setSubjects(subData);
-      if (subData.length > 0) {
-        setHistorySubjectId(subData[0].id);
+      setSubjects(finalData);
+      if (finalData.length > 0 && !historySubjectId) {
+        setHistorySubjectId(finalData[0].id);
       }
     } catch (error) {
-      toast.error('Failed to load subjects');
+      console.error('Subject fetch error:', error);
     }
   };
 
   const fetchHistoryRecords = async () => {
     setLoading(true);
     try {
-      const batchStudentsRes = await api.get('/students', { 
-        params: { batch_id: user.student.batch_id, per_page: 200 } 
-      });
-      const allStudents = batchStudentsRes.data.data.data || [];
-
-      const sessionsRes = await api.get('/attendance/batch-sessions', {
+      // Parallelize student fetching and session discovery
+      const studentPromise = students.length === 0 
+        ? api.get('/students', { params: { batch_id: user?.student?.batch_id, per_page: 200 } })
+        : Promise.resolve(null);
+        
+      const sessionsPromise = api.get('/attendance/batch-sessions', {
         params: {
           subject_id: historySubjectId,
           period: historyPeriod,
           date: historyDate
         }
       });
+
+      const [stuRes, sessRes] = await Promise.all([studentPromise, sessionsPromise]);
       
-      const session = (sessionsRes.data.data || []).find(s => 
-        format(new Date(s.created_at), 'yyyy-MM-dd') === historyDate
-      );
+      // Update students if we fetched them
+      let allStudents = students;
+      if (stuRes) {
+        allStudents = stuRes.data.data.data || [];
+        setStudents(allStudents);
+      }
+
+      const session = (sessRes.data.data || [])[0];
 
       let recordMap = {};
       if (session) {
@@ -139,6 +141,7 @@ export const RepAttendancePage = () => {
 
       setHistoricalRecords(mergedRecords);
     } catch (error) {
+       console.error('History fetch error:', error);
        toast.error('Query failed');
     } finally {
       setLoading(false);
@@ -153,24 +156,32 @@ export const RepAttendancePage = () => {
     setLoading(true);
     try {
       const response = await api.post('/attendance/initialize', {
-        semester_id: user.student.current_semester_id,
-        batch_id: user.student.batch_id,
+        semester_id: user?.student?.current_semester_id,
+        batch_id: user?.student?.batch_id,
         subject_id: selectedSubject,
         date: format(new Date(), 'yyyy-MM-dd'),
         period: selectedPeriod,
         start_time: format(new Date(), 'HH:mm'), 
-        end_time: format(new Date().setHours(new Date().getHours() + 2), 'HH:mm')
+        end_time: format(new Date(new Date().setHours(new Date().getHours() + 2)), 'HH:mm')
       });
       
       const newSessionId = response.data.data.id;
       setSessionId(newSessionId);
       
-      const [stuRes, recRes] = await Promise.all([
-        api.get('/students', { params: { batch_id: user.student.batch_id, per_page: 200 } }),
-        api.get(`/attendance/sessions/${newSessionId}`)
-      ]);
+      // Parallelize student list and existing records fetching
+      const promises = [api.get(`/attendance/sessions/${newSessionId}`)];
       
-      setStudents(stuRes.data.data.data || []);
+      // Only fetch students if not already loaded
+      if (students.length === 0) {
+        promises.push(api.get('/students', { params: { batch_id: user.student.batch_id, per_page: 200 } }));
+      }
+      
+      const results = await Promise.all(promises);
+      const recRes = results[0];
+      const stuRes = results[1];
+      
+      if (stuRes) setStudents(stuRes.data.data.data || []);
+      
       const existing = {};
       (recRes.data.data.records || []).forEach(r => {
         existing[r.student_id] = r.status;
@@ -178,6 +189,7 @@ export const RepAttendancePage = () => {
       setAttendanceRecords(existing);
       toast.success('Session Ready');
     } catch (error) {
+      console.error(error);
       toast.error('Failed to initialize session');
     } finally {
       setLoading(false);

@@ -161,7 +161,7 @@ class ResourceController extends Controller
     public function lecturerUpdate(Request $request, int $id): JsonResponse
     {
         $lecturer = Lecturer::findOrFail($id);
-        $userFields = array_filter($request->only(['name', 'email', 'phone']));
+        $userFields = $request->only(['name', 'email', 'phone']);
         if (!empty($userFields)) $lecturer->user()->update($userFields);
         $lecturer->update($request->only('department', 'specialization'));
         return response()->json(['success' => true, 'data' => $lecturer->load('user')]);

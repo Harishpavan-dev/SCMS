@@ -176,7 +176,7 @@ class AuthController extends Controller
                     $fileName = 'avatar_' . $user->id . '_' . time() . '.' . $type;
                     Storage::disk('public')->put('avatars/' . $fileName, $imageData);
                     
-                    $user->update(['avatar' => env('APP_URL') . '/storage/avatars/' . $fileName]);
+                    $user->update(['avatar' => config('app.url') . '/storage/avatars/' . $fileName]);
                 }
             }
 

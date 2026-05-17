@@ -45,6 +45,7 @@ Route::middleware(\App\Http\Middleware\JWTAuth::class)->group(function () {
         Route::post('/attendance/update-status', [AttendanceController::class, 'updateStatus']);
         Route::get('/attendance/sessions/{id}', [AttendanceController::class, 'getSessionRecords']);
         Route::get('/attendance/rep-analytics', [AttendanceController::class, 'getRepAnalytics']);
+        Route::get('/subjects', [SubjectController::class, 'index']);
     });
 
     // --- ANALYTICS & REPORTS ---
@@ -67,7 +68,6 @@ Route::middleware(\App\Http\Middleware\JWTAuth::class)->group(function () {
     // Admin & HOD Only - Resource Management
     Route::middleware(\App\Http\Middleware\RoleMiddleware::class.':admin,hod')->group(function () {
         Route::apiResource('/subjects', SubjectController::class, ['except' => ['index']]);
-        Route::get('/subjects', [SubjectController::class, 'index']);
         
         // Users
         Route::get('/users', [ResourceController::class, 'userIndex']);

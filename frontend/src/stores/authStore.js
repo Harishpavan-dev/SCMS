@@ -7,16 +7,18 @@ const useAuthStore = create(
     (set, get) => ({
       user: null,
       token: null,
+      refreshToken: null,
       isAuthenticated: false,
 
       login: async (email, password) => {
         try {
           const response = await api.post('/auth/login', { email, password });
-          const { user, access_token } = response.data.data;
+          const { user, access_token, refresh_token } = response.data.data;
           
           set({ 
             user, 
             token: access_token, 
+            refreshToken: refresh_token,
             isAuthenticated: true 
           });
           
@@ -31,7 +33,7 @@ const useAuthStore = create(
       },
 
       logout: () => {
-        set({ user: null, token: null, isAuthenticated: false });
+        set({ user: null, token: null, refreshToken: null, isAuthenticated: false });
         localStorage.removeItem('token');
       },
 

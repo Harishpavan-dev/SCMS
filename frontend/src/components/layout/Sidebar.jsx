@@ -47,7 +47,7 @@ export const Sidebar = ({ onClose }) => {
       return [
         { label: 'Main', items: [
           { name: 'Dashboard', path: '/dashboard', icon: HomeIcon },
-          { name: 'Reports', path: '/dashboards/Hod dashboard', icon: DocumentChartBarIcon },
+          { name: 'Reports', path: '/dashboards/hod-dashboard', icon: DocumentChartBarIcon },
         ]},
         { label: 'Academic', items: [
           { name: 'Subjects', path: '/subjects', icon: BookOpenIcon },
@@ -74,7 +74,7 @@ export const Sidebar = ({ onClose }) => {
       return [
         { label: 'Main', items: [
           { name: 'Dashboard', path: '/dashboard', icon: HomeIcon },
-          { name: 'Mark Attendance', path: '/Rep_login', icon: ClipboardDocumentCheckIcon },
+          { name: 'Mark Attendance', path: '/rep-login', icon: ClipboardDocumentCheckIcon },
           { name: 'My Attendance', path: '/attendance/my', icon: ChartBarIcon },
         ]},
         { label: 'Identity', items: [

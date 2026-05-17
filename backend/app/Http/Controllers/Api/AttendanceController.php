@@ -41,7 +41,7 @@ class AttendanceController extends Controller
             ],
             [
                 'end_time' => $request->end_time,
-                'lecturer_id' => $user->lecturer->id ?? 1, // Fallback if admin creates
+                'lecturer_id' => $user->lecturer?->id ?? null, // Fallback if admin/rep creates
                 'status' => 'ongoing',
             ]
         );
@@ -527,10 +527,6 @@ class AttendanceController extends Controller
             ]
         );
 
-        if ($request->status !== 'unmarked') {
-            $this->sendWhatsAppNotification($record);
-        }
-
         return response()->json([
             'success' => true,
             'message' => "Attendance status updated to {$request->status}.",
@@ -642,9 +638,13 @@ class AttendanceController extends Controller
                 if ($request->has('period')) {
                     $q->where('period', $request->period);
                 }
+
+                if ($request->has('date')) {
+                    $q->whereDate('date', $request->date);
+                }
             });
 
-        $sessions = $query->latest()->get();
+        $sessions = $query->latest()->limit(5)->get();
 
         return response()->json([
             'success' => true,
@@ -684,13 +684,28 @@ class AttendanceController extends Controller
             ->where('current_semester_id', $semesterId)
             ->get();
 
-        // Numeric ordering by registration number
-        $students = $students->sortBy(function($s) {
-            preg_match('/(\d+)$/', $s->registration_number, $matches);
-            return (int)($matches[1] ?? 0);
-        })->values();
-
         $subjects = \App\Models\Subject::where('semester_id', $semesterId)->get();
+
+        // Optimized Analytics: Fetch all counts in fewer queries
+        $sessionCounts = AttendanceSession::whereHas('classSession', function($q) use ($batchId, $semesterId) {
+                $q->where('batch_id', $batchId)->where('semester_id', $semesterId);
+            })
+            ->join('class_sessions', 'attendance_sessions.class_session_id', '=', 'class_sessions.id')
+            ->selectRaw('class_sessions.subject_id, count(*) as total')
+            ->groupBy('class_sessions.subject_id')
+            ->pluck('total', 'subject_id');
+
+        $attendanceCounts = AttendanceRecord::whereIn('student_id', $students->pluck('id'))
+            ->where('status', 'present')
+            ->whereHas('attendanceSession.classSession', function($q) use ($batchId, $semesterId) {
+                $q->where('batch_id', $batchId)->where('semester_id', $semesterId);
+            })
+            ->join('attendance_sessions', 'attendance_records.attendance_session_id', '=', 'attendance_sessions.id')
+            ->join('class_sessions', 'attendance_sessions.class_session_id', '=', 'class_sessions.id')
+            ->selectRaw('student_id, subject_id, count(*) as present_count')
+            ->groupBy('student_id', 'subject_id')
+            ->get()
+            ->groupBy('student_id');
 
         $data = [];
 
@@ -703,20 +718,12 @@ class AttendanceController extends Controller
             ];
 
             $totalPresent = 0;
-            $totalSessionsCounted = 0;
+            $totalPossible = $sessionCounts->sum();
+            $stuAttendance = $attendanceCounts->get($stu->id, collect());
 
             foreach ($subjects as $subject) {
-                // Total sessions for this subject, batch, and semester
-                $totalSubSessions = AttendanceSession::whereHas('classSession', function($q) use ($batchId, $semesterId, $subject) {
-                    $q->where('batch_id', $batchId)
-                      ->where('semester_id', $semesterId)
-                      ->where('subject_id', $subject->id);
-                })->count();
-
-                $subPresentCount = AttendanceRecord::where('student_id', $stu->id)
-                    ->where('status', 'present')
-                    ->whereHas('attendanceSession.classSession', fn($q) => $q->where('subject_id', $subject->id))
-                    ->count();
+                $totalSubSessions = $sessionCounts->get($subject->id, 0);
+                $subPresentCount = $stuAttendance->where('subject_id', $subject->id)->first()?->present_count ?? 0;
 
                 $percent = $totalSubSessions > 0 ? round(($subPresentCount / $totalSubSessions) * 100) : 0;
                 
@@ -726,14 +733,17 @@ class AttendanceController extends Controller
                 ];
                 
                 $totalPresent += $subPresentCount;
-                $totalSessionsCounted += $totalSubSessions;
             }
 
-            $overallPercentage = $totalSessionsCounted > 0 ? round(($totalPresent / $totalSessionsCounted) * 100) : 0;
-            $studentData['overall_percentage'] = $overallPercentage;
-
+            $studentData['overall_percentage'] = $totalPossible > 0 ? round(($totalPresent / $totalPossible) * 100) : 0;
             $data[] = $studentData;
         }
+
+        // Numeric ordering by registration number
+        $data = collect($data)->sortBy(function($s) {
+            preg_match('/(\d+)$/', $s['registration_number'], $matches);
+            return (int)($matches[1] ?? 0);
+        })->values();
 
         return response()->json([
             'success' => true,

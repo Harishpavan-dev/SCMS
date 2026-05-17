@@ -313,16 +313,16 @@ class StudentController extends Controller
         DB::beginTransaction();
         try {
             // Update user
-            $userFields = array_filter($request->only(['name', 'email', 'phone']));
+            $userFields = $request->only(['name', 'email', 'phone']);
             if (!empty($userFields)) {
                 $student->user()->update($userFields);
             }
 
             // Update student
-            $studentFields = array_filter($request->only([
+            $studentFields = $request->only([
                 'nic_number', 'date_of_birth', 'gender', 'address',
                 'batch_id', 'current_semester_id', 'status',
-            ]));
+            ]);
             if (!empty($studentFields)) {
                 $student->update($studentFields);
             }

@@ -202,7 +202,7 @@ export const DashboardPage = () => {
           </Link>
         )}
         {isRep && (
-          <Link to="/Rep_login"
+          <Link to="/rep-login"
             className="inline-flex items-center gap-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-3 rounded-xl shadow-sm hover:shadow-lg hover:shadow-indigo-200 transition-all duration-200 active:scale-95 self-start sm:self-auto">
             <ClipboardDocumentCheckIcon className="w-4 h-4" />
             Mark Attendance

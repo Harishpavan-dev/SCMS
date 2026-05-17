@@ -1,4 +1,5 @@
 import axios from 'axios';
+import useAuthStore from '../stores/authStore';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
@@ -24,8 +25,32 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
-    // Auto refresh logic can be added here
-    // For now, if 401 Unauthorized, just clear user (handled by store)
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      try {
+        const { refreshToken } = useAuthStore.getState();
+        if (refreshToken) {
+          const response = await axios.post(`${api.defaults.baseURL}/auth/refresh`, {
+            refresh_token: refreshToken
+          });
+          
+          const { access_token, refresh_token } = response.data.data;
+          
+          useAuthStore.setState({ 
+            token: access_token, 
+            refreshToken: refresh_token 
+          });
+          
+          localStorage.setItem('token', access_token);
+          originalRequest.headers.Authorization = `Bearer ${access_token}`;
+          
+          return axios(originalRequest);
+        }
+      } catch (refreshError) {
+        useAuthStore.getState().logout();
+      }
+    }
     
     return Promise.reject(error);
   }

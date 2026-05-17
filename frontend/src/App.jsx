@@ -69,9 +69,9 @@ function App() {
           <Route path="/attendance/admin-scan" element={<AdminQrAttendance />} />
           
           {/* Role-Specific Dashboards */}
-          <Route path="/dashboards/Student dashboard" element={<StudentDashboard />} />
-          <Route path="/dashboards/Hod dashboard" element={<HodDashboard />} />
-          <Route path="/Rep_login" element={<RepAttendancePage />} />
+          <Route path="/dashboards/student-dashboard" element={<StudentDashboard />} />
+          <Route path="/dashboards/hod-dashboard" element={<HodDashboard />} />
+          <Route path="/rep-login" element={<RepAttendancePage />} />
           <Route path="/attendance/rep-analytics" element={<RepAnalyticsPage />} />
           
           {/* Lecturer Routes */}
