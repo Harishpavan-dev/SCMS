@@ -62,7 +62,6 @@ export const Sidebar = ({ onClose }) => {
       return [
         { label: 'Main', items: [
           { name: 'Dashboard', path: '/dashboard', icon: HomeIcon },
-          { name: 'Mark Attendance', path: '/attendance', icon: ClipboardDocumentCheckIcon },
         ]},
         { label: 'Account', items: [
           { name: 'Settings', path: '/profile', icon: Cog6ToothIcon },
@@ -74,7 +73,7 @@ export const Sidebar = ({ onClose }) => {
       return [
         { label: 'Main', items: [
           { name: 'Dashboard', path: '/dashboard', icon: HomeIcon },
-          { name: 'Mark Attendance', path: '/rep-login', icon: ClipboardDocumentCheckIcon },
+          { name: 'Mark Attendance', path: '/attendance', icon: ClipboardDocumentCheckIcon },
           { name: 'My Attendance', path: '/attendance/my', icon: ChartBarIcon },
           { name: 'Academic Results', path: '/results', icon: DocumentChartBarIcon },
         ]},

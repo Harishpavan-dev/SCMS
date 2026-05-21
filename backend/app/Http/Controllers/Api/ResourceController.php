@@ -130,8 +130,6 @@ class ResourceController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'phone' => 'nullable|string|max:20',
-            'employee_id' => 'required|string|max:50|unique:lecturers,employee_id',
-            'department' => 'nullable|string|max:255',
             'specialization' => 'nullable|string|max:255',
         ]);
         if ($v->fails()) return response()->json(['success' => false, 'errors' => $v->errors()], 422);
@@ -147,8 +145,7 @@ class ResourceController extends Controller
 
         $lecturer = Lecturer::create([
             'user_id' => $user->id,
-            'employee_id' => $request->employee_id,
-            'department' => $request->department,
+            'employee_id' => 'LEC-' . str_pad($user->id, 4, '0', STR_PAD_LEFT),
             'specialization' => $request->specialization,
         ]);
 

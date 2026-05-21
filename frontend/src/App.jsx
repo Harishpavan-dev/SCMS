@@ -75,11 +75,13 @@ function App() {
           {/* Role-Specific Dashboards */}
           <Route path="/dashboards/student-dashboard" element={<StudentDashboard />} />
           <Route path="/dashboards/hod-dashboard" element={<HodDashboard />} />
+          {/* Attendance Routes */}
+          <Route path="/attendance" element={<RepAttendancePage />} />
           <Route path="/rep-login" element={<RepAttendancePage />} />
           <Route path="/attendance/rep-analytics" element={<RepAnalyticsPage />} />
           
-          {/* Lecturer Routes */}
-          <Route path="/attendance" element={<QRGeneratorPage />} /> {/* Default to generator for lecturers */}
+          {/* Legacy Lecturer Routes (Disabled) */}
+          <Route path="/attendance/generator" element={<QRGeneratorPage />} /> 
           
           {/* Student/Rep Routes */}
           <Route path="/my-id-card" element={<StudentIdCard />} />

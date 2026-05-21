@@ -738,14 +738,14 @@ class AttendanceController extends Controller
             ->pluck('total', 'subject_id');
 
         $attendanceCounts = AttendanceRecord::whereIn('student_id', $students->pluck('id'))
-            ->where('status', 'present')
+            ->where('attendance_records.status', 'present')
             ->whereHas('attendanceSession.classSession', function($q) use ($batchId, $semesterId) {
                 $q->where('batch_id', $batchId)->where('semester_id', $semesterId);
             })
             ->join('attendance_sessions', 'attendance_records.attendance_session_id', '=', 'attendance_sessions.id')
             ->join('class_sessions', 'attendance_sessions.class_session_id', '=', 'class_sessions.id')
-            ->selectRaw('student_id, subject_id, count(*) as present_count')
-            ->groupBy('student_id', 'subject_id')
+            ->selectRaw('attendance_records.student_id, class_sessions.subject_id, count(*) as present_count')
+            ->groupBy('attendance_records.student_id', 'class_sessions.subject_id')
             ->get()
             ->groupBy('student_id');
 
