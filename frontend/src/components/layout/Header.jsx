@@ -35,14 +35,11 @@ export const Header = () => {
   });
 
   return (
-    <header
-      className="h-16 bg-white border-b border-slate-100 flex items-center justify-between px-6 lg:px-8 shrink-0 sticky top-0 z-30"
-      style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
-    >
+    <header className="h-16 bg-white border-b border-slate-100 flex items-center justify-between px-6 lg:px-10 shrink-0 sticky top-0 z-30">
       {/* Left — Page Title & Date */}
       <div>
-        <h2 className="text-sm font-bold text-slate-800">{getTitle()}</h2>
-        <p className="text-[11px] text-slate-400 hidden sm:block">{today}</p>
+        <h2 className="text-base font-bold text-slate-900 tracking-tight">{getTitle()}</h2>
+        <p className="text-[11px] font-bold text-slate-400 hidden sm:block uppercase tracking-wider">{today}</p>
       </div>
 
       {/* Right — Notification + Avatar */}

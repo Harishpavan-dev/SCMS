@@ -153,8 +153,24 @@ export const AdminQrAttendance = () => {
         aspectRatio: 1.0,
       });
 
+      // Use a local variable to track the last scanned text inside the specific scanner instance
+      let currentScanned = null;
+
       const onScanSuccess = async (decodedText) => {
-        if (lastScanned === decodedText) return;
+        if (currentScanned === decodedText) return;
+        
+        // Error handling for generic/wrong QR codes
+        if (decodedText.length > 50 || decodedText.startsWith('http')) {
+            if (currentScanned !== 'INVALID') {
+               toast.error('Invalid ID QR Code format detected');
+               currentScanned = 'INVALID';
+               setTimeout(() => { currentScanned = null; }, 3000);
+            }
+            return;
+        }
+
+        currentScanned = decodedText;
+        setLastScanned(decodedText); // Update UI state
         
         try {
           const response = await api.post('/attendance/mark-scan', {
@@ -163,7 +179,6 @@ export const AdminQrAttendance = () => {
           });
           
           const scanInfo = response.data.data;
-          setLastScanned(decodedText);
           setRecentScans(prev => [
             { id: Date.now(), name: scanInfo.student_name, reg: scanInfo.reg_number, time: format(new Date(), 'HH:mm:ss'), status: 'success' },
             ...prev
@@ -181,7 +196,11 @@ export const AdminQrAttendance = () => {
           ].slice(0, 10));
         }
         
-        setTimeout(() => setLastScanned(null), 1500);
+        // Reset the tracker after a delay
+        setTimeout(() => {
+           if (currentScanned === decodedText) currentScanned = null;
+           setLastScanned(null);
+        }, 2000);
       };
 
       scanner.render(onScanSuccess, (e) => {});

@@ -113,7 +113,7 @@ export const Sidebar = ({ onClose }) => {
   const groups = getNavItems();
 
   return (
-    <div className="w-full bg-white h-full flex flex-col border-r border-slate-100" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div className="w-full bg-white h-full flex flex-col border-r border-slate-100 transition-all duration-300">
 
       {/* ── Brand ── */}
       <div className="flex items-center justify-between px-6 h-16 border-b border-slate-100 shrink-0">
@@ -132,15 +132,13 @@ export const Sidebar = ({ onClose }) => {
       </div>
 
       {/* ── User Greeting ── */}
-      <div className="px-5 py-5 border-b border-slate-50">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center font-bold text-indigo-600 text-sm shrink-0">
-            {user?.name?.charAt(0)?.toUpperCase()}
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-slate-800 truncate">{user?.name}</p>
-            <p className="text-xs text-slate-400 capitalize">{user?.role}</p>
-          </div>
+      <div className="px-5 py-6 border-b border-slate-50 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center font-bold text-indigo-600 text-sm shrink-0">
+          {user?.name?.charAt(0)?.toUpperCase()}
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-slate-900 truncate leading-none mb-1">{user?.name}</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{user?.role}</p>
         </div>
       </div>
 

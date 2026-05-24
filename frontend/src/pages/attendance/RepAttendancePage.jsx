@@ -163,9 +163,23 @@ export const RepAttendancePage = () => {
             aspectRatio: 1.0,
          });
 
-         const onScanSuccess = async (decodedText) => {
-            if (lastScanned === decodedText) return;
+         let currentScanned = null;
 
+         const onScanSuccess = async (decodedText) => {
+            if (currentScanned === decodedText) return;
+
+            // Pre-flight check: Prevent sending huge chunks of data or URLs to our backend
+            if (decodedText.length > 50 || decodedText.startsWith('http')) {
+               if (currentScanned !== 'INVALID') {
+                  toast.error('Invalid ID Card QR format');
+                  currentScanned = 'INVALID';
+                  setTimeout(() => { currentScanned = null; }, 3000); // Wait 3s before allowing another invalid scan Error beep
+               }
+               return;
+            }
+
+            currentScanned = decodedText;
+            
             try {
                const response = await api.post('/attendance/mark-scan', {
                   attendance_session_id: sessionId,
@@ -192,16 +206,26 @@ export const RepAttendancePage = () => {
                toast.error(error.response?.data?.message || 'Scan failed');
             }
 
-            setTimeout(() => setLastScanned(null), 1500);
+            setTimeout(() => {
+               if (currentScanned === decodedText) currentScanned = null;
+               setLastScanned(null);
+            }, 2000);
          };
 
          scanner.render(onScanSuccess, (e) => { });
 
          return () => {
-            scanner.clear().catch(err => console.error(err));
+            scanner.clear().then(() => {
+               const el = document.getElementById('rep-scanner');
+               if (el) el.innerHTML = '';
+            }).catch(err => {
+               console.error(err);
+               const el = document.getElementById('rep-scanner');
+               if (el) el.innerHTML = '';
+            });
          };
       }
-   }, [scannerActive, sessionId, students]);
+   }, [scannerActive, sessionId]); // Removed students from deps to avoid re-renders when state updates
 
    const initializeSession = async () => {
       if (!selectedSubject) {

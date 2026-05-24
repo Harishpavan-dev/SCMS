@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import useAuthStore from '../../stores/authStore';
 import { QRCodeCanvas } from 'qrcode.react';
-import html2canvas from 'html2canvas';
+import * as htmlToImage from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import toast from 'react-hot-toast';
 import {
@@ -39,13 +39,11 @@ export const StudentIdCard = () => {
       setDownloading(true);
       const loadingToast = toast.loading('Generating CR80 Premium PDF...');
       
-      const canvas = await html2canvas(cardElement, {
-        scale: 4, // High-res export
-        useCORS: true,
+      const imgData = await htmlToImage.toPng(cardElement, {
+        quality: 1.0,
+        pixelRatio: 4, // High-res export equivalent to scale: 4
         backgroundColor: '#ffffff',
       });
-
-      const imgData = canvas.toDataURL('image/png');
       
       // Standard CR80 ID Card dimensions (54mm x 86mm portrait)
       const pdf = new jsPDF({
@@ -62,7 +60,8 @@ export const StudentIdCard = () => {
     } catch (error) {
       console.error("PDF gen error:", error);
       toast.dismiss();
-      toast.error('Failed to generate PDF document');
+      // Show exact error message to help debug if it fails again
+      toast.error(`PDF Error: ${error.message || 'Unknown error occurred'}`);
     } finally {
       setDownloading(false);
     }
@@ -136,9 +135,9 @@ export const StudentIdCard = () => {
 
           {/* 2. Photo Section */}
           <div className="relative z-20 mt-4">
-             <div className="w-24 h-24 rounded-2xl bg-white border-4 border-white shadow-xl overflow-hidden shadow-indigo-900/20">
+              <div className="w-24 h-24 rounded-2xl bg-white border-4 border-white shadow-xl overflow-hidden shadow-indigo-900/20">
                 {avatarUrl ? (
-                    <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                    <img src={avatarUrl} alt="Profile" crossOrigin="anonymous" className="w-full h-full object-cover" />
                 ) : (
                     <div className="w-full h-full bg-slate-100 flex items-center justify-center">
                        <UserIcon className="w-12 h-12 text-slate-300" />

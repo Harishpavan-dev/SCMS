@@ -121,7 +121,7 @@ class ResourceController extends Controller
     // ========== LECTURERS ==========
     public function lecturerIndex(): JsonResponse
     {
-        return response()->json(['success' => true, 'data' => Lecturer::with('user')->get()]);
+        return response()->json(['success' => true, 'data' => Lecturer::with(['user', 'subjects'])->get()]);
     }
 
     public function lecturerStore(Request $request): JsonResponse
@@ -158,10 +158,27 @@ class ResourceController extends Controller
     public function lecturerUpdate(Request $request, int $id): JsonResponse
     {
         $lecturer = Lecturer::findOrFail($id);
+
+        $v = Validator::make($request->all(), [
+            'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,' . $lecturer->user_id,
+            'phone' => 'nullable|string|max:20',
+            'specialization' => 'nullable|string|max:255',
+            'department' => 'nullable|string|max:255',
+            'subject_ids' => 'sometimes|array',
+            'subject_ids.*' => 'exists:subjects,id',
+        ]);
+        if ($v->fails()) return response()->json(['success' => false, 'errors' => $v->errors()], 422);
+
         $userFields = $request->only(['name', 'email', 'phone']);
         if (!empty($userFields)) $lecturer->user()->update($userFields);
         $lecturer->update($request->only('department', 'specialization'));
-        return response()->json(['success' => true, 'data' => $lecturer->load('user')]);
+
+        if ($request->has('subject_ids')) {
+            $lecturer->subjects()->sync($request->subject_ids);
+        }
+
+        return response()->json(['success' => true, 'data' => $lecturer->load(['user', 'subjects'])]);
     }
 
     public function lecturerDestroy(int $id): JsonResponse

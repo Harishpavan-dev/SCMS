@@ -11,7 +11,7 @@
 
 @layer base {
   body {
-    @apply bg-white text-slate-900 font-sans antialiased scroll-smooth;
+    @apply bg-[#F8FAFC] text-slate-900 font-sans antialiased scroll-smooth;
   }
   
   ::selection {
@@ -22,41 +22,41 @@
 @layer components {
   /* ── BUTTONS ───────────────────────────────────────────────────────────── */
   .btn {
-    @apply inline-flex items-center justify-center px-6 py-3 rounded-2xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-xl font-semibold text-sm transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
   }
   
   .btn-primary {
-    @apply bg-indigo-600 text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-indigo-300;
+    @apply bg-indigo-600 text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 hover:shadow-indigo-200;
   }
   
   .btn-secondary {
-    @apply bg-slate-50 text-slate-700 border border-slate-100 hover:bg-slate-100;
+    @apply bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300;
   }
   
   .btn-dark {
-    @apply bg-slate-900 text-white hover:bg-black shadow-xl shadow-slate-200;
+    @apply bg-slate-900 text-white hover:bg-black shadow-lg shadow-slate-200;
   }
 
   /* ── INPUTS ────────────────────────────────────────────────────────────── */
   .input-field {
-    @apply w-full px-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all;
+    @apply w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all shadow-sm;
   }
   
   .input-label {
-    @apply text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5 ml-1 inline-block;
+    @apply text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 ml-1 inline-block;
   }
 
   /* ── CARDS ─────────────────────────────────────────────────────────────── */
   .card-premium {
-    @apply bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden;
+    @apply bg-white rounded-3xl border border-slate-200/60 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden;
   }
   
   .glass {
-    @apply bg-white/70 backdrop-blur-xl border border-white/20;
+    @apply bg-white/80 backdrop-blur-md border border-white/40;
   }
   
   .glass-dark {
-    @apply bg-slate-950/40 backdrop-blur-2xl border border-white/10;
+    @apply bg-slate-900/60 backdrop-blur-lg border border-white/10;
   }
 }
 

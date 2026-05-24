@@ -20,6 +20,11 @@ class RoleMiddleware
         }
 
         if (!in_array($user->role, $roles)) {
+            \Illuminate\Support\Facades\Log::warning('Role Middleware Access Denied', [
+                'user_role' => $user->role,
+                'allowed_roles' => $roles,
+                'url' => $request->fullUrl(),
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'You do not have permission to access this resource.',

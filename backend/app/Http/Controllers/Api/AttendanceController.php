@@ -163,7 +163,7 @@ class AttendanceController extends Controller
         if (!$student) {
             return response()->json([
                 'success' => false,
-                'message' => 'Student profile not found.',
+                'message' => 'Student profile not found. Only students can mark their own attendance via QR scan.',
             ], 404);
         }
 

@@ -181,47 +181,51 @@ export const DashboardPage = () => {
   ];
 
   return (
-    <div className="space-y-7 pb-16 animate-fade-in" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-
-      {/* ── Welcome Header ─────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">
+    <div className="space-y-8 pb-16 animate-in fade-in duration-700">
+      {/* PROFESSIONAL WELCOME HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-3xl border border-slate-200/60 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50/50 rounded-full blur-3xl -mr-20 -mt-20"></div>
+        <div className="relative z-10">
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
             Welcome back,{' '}
-            <span className="text-indigo-600">{user?.name?.split(' ')[0]}</span> 👋
+            <span className="text-indigo-600">{user?.name?.split(' ')[0]}</span>
           </h1>
-          <p className="text-sm text-slate-400 mt-1">Here's your overview for today</p>
+          <p className="text-sm font-medium text-slate-500 mt-1.5 flex items-center gap-2">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.4)]"></span>
+            Academic performance and records overview
+          </p>
         </div>
 
-        {/* Mark Attendance CTA */}
-        {isAdmin && (
-          <Link to="/attendance/admin-scan"
-            className="inline-flex items-center gap-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-3 rounded-xl shadow-sm hover:shadow-lg hover:shadow-indigo-200 transition-all duration-200 active:scale-95 self-start sm:self-auto">
-            <ClipboardDocumentCheckIcon className="w-4 h-4" />
-            Mark Attendance
-          </Link>
-        )}
-        {isRep && (
-          <Link to="/rep-login"
-            className="inline-flex items-center gap-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-3 rounded-xl shadow-sm hover:shadow-lg hover:shadow-indigo-200 transition-all duration-200 active:scale-95 self-start sm:self-auto">
-            <ClipboardDocumentCheckIcon className="w-4 h-4" />
-            Mark Attendance
-          </Link>
-        )}
-        {isStudent && (
-          <div className="flex flex-wrap gap-3">
-            <Link to="/attendance/my"
-              className="inline-flex items-center gap-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-3 rounded-xl shadow-sm hover:shadow-lg hover:shadow-indigo-200 transition-all duration-200 active:scale-95 self-start sm:self-auto">
-              <ChartBarIcon className="w-4 h-4" />
-              My Attendance
+        <div className="relative z-10 flex flex-wrap gap-3">
+          {isAdmin && (
+            <Link to="/attendance/admin-scan"
+              className="inline-flex items-center gap-2 bg-indigo-600 text-white text-sm font-bold px-6 py-3 rounded-xl shadow-lg shadow-indigo-100 hover:bg-slate-900 transition-all active:scale-95">
+              <QrCodeIcon className="w-5 h-5" />
+              Scanner
             </Link>
-            <Link to="/my-id-card"
-              className="inline-flex items-center gap-2.5 bg-slate-800 hover:bg-slate-700 text-white text-sm font-semibold px-5 py-3 rounded-xl shadow-sm hover:shadow-lg hover:shadow-slate-200 transition-all duration-200 active:scale-95 self-start sm:self-auto">
-              <IdentificationIcon className="w-4 h-4" />
-              My ID Card
+          )}
+          {isRep && (
+            <Link to="/rep-login"
+              className="inline-flex items-center gap-2 bg-indigo-600 text-white text-sm font-bold px-6 py-3 rounded-xl shadow-lg shadow-indigo-100 hover:bg-slate-900 transition-all active:scale-95">
+              <ClipboardDocumentCheckIcon className="w-5 h-5" />
+              Mark Attendance
             </Link>
-          </div>
-        )}
+          )}
+          {isStudent && (
+            <>
+              <Link to="/attendance/my"
+                className="inline-flex items-center gap-2 bg-indigo-600 text-white text-sm font-bold px-6 py-3 rounded-xl shadow-lg shadow-indigo-100 hover:bg-slate-900 transition-all active:scale-95">
+                <ChartBarIcon className="w-5 h-5" />
+                Performance
+              </Link>
+              <Link to="/my-id-card"
+                className="inline-flex items-center gap-2 bg-slate-100 text-slate-700 text-sm font-bold px-6 py-3 rounded-xl hover:bg-slate-200 transition-all active:scale-95">
+                <IdentificationIcon className="w-5 h-5" />
+                Identity Card
+              </Link>
+            </>
+          )}
+        </div>
       </div>
 
       {/* ── Low Attendance Warning (Student) ───────────────────────────────────── */}

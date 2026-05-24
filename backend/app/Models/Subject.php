@@ -41,4 +41,9 @@ class Subject extends Model
     {
         return $this->hasMany(FileUpload::class);
     }
+
+    public function lecturers()
+    {
+        return $this->belongsToMany(Lecturer::class, 'lecturer_subject')->withTimestamps();
+    }
 }

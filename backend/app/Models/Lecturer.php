@@ -47,4 +47,9 @@ class Lecturer extends Model
     {
         return $this->hasMany(Assignment::class);
     }
+
+    public function subjects()
+    {
+        return $this->belongsToMany(Subject::class, 'lecturer_subject')->withTimestamps();
+    }
 }

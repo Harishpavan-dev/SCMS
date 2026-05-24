@@ -21,7 +21,21 @@ export const QRScannerPage = () => {
       fps: 10,
     });
 
+    let currentScanned = null;
+
     const success = async (result) => {
+      if (currentScanned === result) return;
+
+      if (result.length > 50 || result.startsWith('http')) {
+         if (currentScanned !== 'INVALID') {
+            toast.error('Invalid Class QR Code format.');
+            currentScanned = 'INVALID';
+            setTimeout(() => { currentScanned = null; }, 3000);
+         }
+         return;
+      }
+
+      currentScanned = result;
       scanner.clear();
       setScanResult(result);
       handleMarkAttendance(result);
