@@ -26,16 +26,7 @@ import { StudentIdCard } from './pages/students/StudentIdCard';
 import { HodDashboard } from './pages/dashboards/HodDashboard';
 import { SubjectsPage } from './pages/subjects/SubjectsPage';
 import { ProfilePage } from './pages/profile/ProfilePage';
-
-// Placeholder for unbuilt pages
-const PlaceholderPage = ({ title }) => (
-  <div className="flex items-center justify-center h-full text-slate-500">
-    <div className="text-center">
-      <h2 className="text-2xl font-bold mb-2">{title}</h2>
-      <p>This module is currently under development.</p>
-    </div>
-  </div>
-);
+import { ResultsPage } from './pages/results/ResultsPage';
 
 function App() {
   const { isAuthenticated, checkAuth } = useAuthStore();
@@ -91,6 +82,7 @@ function App() {
           {/* Common/Shared Routes Structure */}
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/results" element={<ResultsPage />} />
         </Route>
       </Routes>
     </>
