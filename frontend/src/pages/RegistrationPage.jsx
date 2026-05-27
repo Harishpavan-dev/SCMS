@@ -3,13 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import Cropper from 'react-easy-crop';
 import api from '../api/client';
 import toast from 'react-hot-toast';
-import { CheckCircleIcon, PhotoIcon, ArrowsPointingOutIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, PhotoIcon, ArrowsPointingOutIcon, XMarkIcon, CheckIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import getCroppedImg from '../utils/cropImage';
 
 export const RegistrationPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [batches, setBatches] = useState([]);
   const [semesters, setSemesters] = useState([]);
   
@@ -192,10 +193,19 @@ export const RegistrationPage = () => {
 
               <div>
                 <label className="input-label">Portal Password</label>
-                <input 
-                  type="password" name="password" required value={formData.password} onChange={handleChange}
-                  className="input-field" placeholder="Min. 6 characters" minLength={6}
-                />
+                <div className="relative group">
+                  <input 
+                    type={showPassword ? "text" : "password"} name="password" required value={formData.password} onChange={handleChange}
+                    className="input-field pr-12" placeholder="Min. 6 characters" minLength={6}
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-indigo-600 transition-colors"
+                  >
+                    {showPassword ? <EyeSlashIcon className="w-4.5 h-4.5" /> : <EyeIcon className="h-4.5 w-4.5" />}
+                  </button>
+                </div>
               </div>
 
               <div>

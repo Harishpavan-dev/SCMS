@@ -14,6 +14,8 @@ use App\Http\Controllers\Api\{
 // Public Routes
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/refresh', [AuthController::class, 'refresh']);
+Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
 Route::post('/students/public-register', [StudentController::class, 'publicRegister']);
 Route::get('/public/batches', [ResourceController::class, 'batchIndex']);
 Route::get('/public/semesters', [ResourceController::class, 'semesterIndex']);

@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import useAuthStore from '../stores/authStore';
 import toast from 'react-hot-toast';
-import { LockClosedIcon, EnvelopeIcon, ArrowRightIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { LockClosedIcon, EnvelopeIcon, ArrowRightIcon, SparklesIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const login = useAuthStore(state => state.login);
   const navigate = useNavigate();
@@ -61,12 +62,19 @@ export const LoginPage = () => {
                 <LockClosedIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
                 <input
                   required
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-indigo-500/50 focus:bg-white/10 transition-all"
+                  className="w-full pl-12 pr-12 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-indigo-500/50 focus:bg-white/10 transition-all font-bold"
                   placeholder="Master Password"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 text-slate-500 hover:text-indigo-400 transition-colors"
+                >
+                  {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                </button>
               </div>
             </div>
 
@@ -75,7 +83,7 @@ export const LoginPage = () => {
                 <input type="checkbox" className="w-4 h-4 rounded border-white/10 bg-white/5 text-indigo-600 focus:ring-0 cursor-pointer" />
                 <span className="text-xs font-bold text-slate-400 group-hover:text-slate-300 transition-colors">Keep me signed in</span>
               </label>
-              <a href="#" className="text-xs font-bold text-indigo-400 hover:text-indigo-300">Recover Key?</a>
+              <Link to="/forgot-password" size="sm" className="text-xs font-bold text-indigo-400 hover:text-indigo-300">Recover Key?</Link>
             </div>
 
             <button

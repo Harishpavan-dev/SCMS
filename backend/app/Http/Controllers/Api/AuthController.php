@@ -146,6 +146,75 @@ class AuthController extends Controller
         ]);
     }
 
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $request->validate(['email' => 'required|email|exists:users,email']);
+
+        $token = rand(100000, 999999);
+        
+        DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $request->email],
+            ['token' => $token, 'created_at' => now()]
+        );
+
+        try {
+            \Illuminate\Support\Facades\Mail::send([], [], function ($message) use ($request, $token) {
+                $message->to($request->email)
+                    ->subject('Password Reset Code - SCMS')
+                    ->html("
+                        <div style='font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid #e2e8f0; border-radius: 24px;'>
+                            <div style='text-align: center; margin-bottom: 30px;'>
+                                <div style='display: inline-block; background: #4f46e5; width: 48px; height: 48px; border-radius: 12px; line-height: 48px; color: white; font-weight: 900;'>SC</div>
+                            </div>
+                            <h2 style='color: #1e293b; font-weight: 900; text-align: center; margin-bottom: 8px;'>Password Reset Request</h2>
+                            <p style='color: #64748b; text-align: center; font-size: 14px; margin-bottom: 30px;'>Use the code below to reset your SCMS terminal password.</p>
+                            
+                            <div style='background: #f8fafc; padding: 24px; border-radius: 16px; text-align: center; border: 1px dashed #cbd5e1;'>
+                                <span style='font-family: monospace; font-size: 32px; font-weight: 900; letter-spacing: 12px; color: #4f46e5;'>$token</span>
+                            </div>
+                            
+                            <p style='color: #94a3b8; font-size: 12px; text-align: center; margin-top: 40px;'>
+                                If you did not request this, please ignore this email or contact support.
+                            </p>
+                        </div>
+                    ");
+            });
+
+            return response()->json(['success' => true, 'message' => 'Reset code sent to your email.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to send email. ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|exists:users,email',
+            'token' => 'required|string',
+            'password' => 'required|string|min:8|confirmed'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $record = DB::table('password_reset_tokens')
+            ->where('email', $request->email)
+            ->where('token', $request->token)
+            ->first();
+
+        if (!$record || now()->parse($record->created_at)->addMinutes(15)->isPast()) {
+            return response()->json(['success' => false, 'message' => 'Invalid or expired code.'], 400);
+        }
+
+        $user = User::where('email', $request->email)->first();
+        $user->update(['password' => Hash::make($request->password)]);
+
+        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+        return response()->json(['success' => true, 'message' => 'Password reset successfully.']);
+    }
+
     public function updateProfile(Request $request): JsonResponse
     {
         $user = $request->user();

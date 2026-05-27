@@ -1,13 +1,16 @@
 importScripts('https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.0.0/firebase-messaging-compat.js');
 
+// Get config from URL parameters
+const urlParams = new URL(self.location).searchParams;
+
 firebase.initializeApp({
-  apiKey: "AIzaSyDy7WY_wt0sedcuMB3pB5Myoq7RmY6cP2s",
-  authDomain: "newsflash-9l4nq.firebaseapp.com",
-  projectId: "newsflash-9l4nq",
-  storageBucket: "newsflash-9l4nq.firebasestorage.app",
-  messagingSenderId: "988999064120",
-  appId: "1:988999064120:web:a855f78d697340ffb0a4cd"
+  apiKey: urlParams.get('apiKey'),
+  authDomain: urlParams.get('authDomain'),
+  projectId: urlParams.get('projectId'),
+  storageBucket: urlParams.get('storageBucket'),
+  messagingSenderId: urlParams.get('messagingSenderId'),
+  appId: urlParams.get('appId')
 });
 
 const messaging = firebase.messaging();

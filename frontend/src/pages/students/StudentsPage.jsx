@@ -141,7 +141,7 @@ export const StudentsPage = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Header section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div>
           <h1 className="text-xl font-bold text-slate-900">Student Management</h1>
           <p className="text-sm text-slate-500">Manage batches and student representatives</p>
@@ -150,7 +150,7 @@ export const StudentsPage = () => {
         {user?.role === 'admin' && (
           <button 
             onClick={() => setShowUpgradeModal(true)}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-indigo-700 transition-all"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-indigo-700 transition-all"
           >
             <ArrowTrendingUpIcon className="w-4 h-4" />
             Upgrade Academic Year
@@ -159,35 +159,37 @@ export const StudentsPage = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-         <div className="flex flex-wrap gap-2">
-            <button 
-              onClick={() => setSelectedBatch('all')}
-              className={clsx("px-4 py-2 rounded-xl text-xs font-bold transition-all border", selectedBatch === 'all' ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50")}
-            >
-              All Batches
-            </button>
-            {batches.map(batch => (
-              <button 
-                key={batch.id}
-                onClick={() => setSelectedBatch(batch.id)}
-                className={clsx("px-4 py-2 rounded-xl text-xs font-bold transition-all border flex items-center gap-2", selectedBatch === batch.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50")}
-              >
-                {batch.name}
-                <span className="text-[10px] opacity-70">({getBatchRepCount(batch.id)} Reps)</span>
-              </button>
-            ))}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+         <div className="w-full overflow-x-auto pb-2 -mb-2">
+            <div className="flex gap-2 min-w-max">
+               <button 
+                 onClick={() => setSelectedBatch('all')}
+                 className={clsx("px-4 py-2 rounded-xl text-xs font-bold transition-all border", selectedBatch === 'all' ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50")}
+               >
+                 All Batches
+               </button>
+               {batches.map(batch => (
+                 <button 
+                   key={batch.id}
+                   onClick={() => setSelectedBatch(batch.id)}
+                   className={clsx("px-4 py-2 rounded-xl text-xs font-bold transition-all border flex items-center gap-2", selectedBatch === batch.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50")}
+                 >
+                   {batch.name}
+                   <span className="text-[10px] opacity-70">({getBatchRepCount(batch.id)} Reps)</span>
+                 </button>
+               ))}
+            </div>
          </div>
 
-         <div className="bg-slate-100 p-1 rounded-xl flex border border-slate-200">
+         <div className="bg-slate-100 p-1 rounded-xl flex border border-slate-200 w-full md:w-auto self-end">
             <button 
-              className={clsx("px-4 py-2 rounded-lg text-xs font-bold transition-all", activeTab === 'active' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500")}
+              className={clsx("flex-1 md:flex-none px-6 py-2 rounded-lg text-xs font-bold transition-all", activeTab === 'active' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500")}
               onClick={() => setActiveTab('active')}
             >
               Active
             </button>
             <button 
-              className={clsx("px-4 py-2 rounded-lg text-xs font-bold transition-all", activeTab === 'pending' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500")}
+              className={clsx("flex-1 md:flex-none px-6 py-2 rounded-lg text-xs font-bold transition-all", activeTab === 'pending' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500")}
               onClick={() => setActiveTab('pending')}
             >
               Pending
@@ -195,10 +197,10 @@ export const StudentsPage = () => {
          </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      {/* List Container */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px] flex flex-col">
         <div className="p-4 border-b border-slate-100">
-           <div className="relative max-w-sm">
+           <div className="relative max-w-full sm:max-w-sm">
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input 
                  type="text" 
@@ -211,71 +213,109 @@ export const StudentsPage = () => {
         </div>
 
         {loading ? (
-          <div className="p-10 text-center text-slate-400 font-medium">Loading records...</div>
+          <div className="flex-1 flex items-center justify-center p-10 text-slate-400 font-bold text-xs uppercase tracking-[0.2em]">Updating student matrix...</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                <tr>
-                  <th className="px-6 py-4">Student</th>
-                  <th className="px-6 py-4">Reg Number</th>
-                  <th className="px-6 py-4">Current Semester</th>
-                  <th className="px-6 py-4 text-right">Role</th>
-                  {activeTab === 'pending' && <th className="px-6 py-4 text-right">Actions</th>}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 italic-none">
-                {students.map((student) => (
-                  <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-6 py-4 cursor-pointer" onClick={() => handleOpenEdit(student)}>
-                      <div className="flex items-center gap-3">
-                        {student.user?.avatar ? (
-                          <img 
-                            src={`${import.meta.env.VITE_API_URL}/storage/${student.user.avatar}`} 
-                            className="w-8 h-8 rounded-full object-cover border border-slate-200"
-                            alt=""
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs text-uppercase group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-all">
-                            {student.user?.name?.charAt(0)}
-                          </div>
-                        )}
-                        <div>
-                          <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-all">{student.user?.name}</p>
-                          <p className="text-xs text-slate-400">{student.user?.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 font-mono text-xs text-slate-600">
-                      {student.registration_number}
-                    </td>
-                    <td className="px-6 py-4 text-xs font-medium text-slate-500">
-                      {student.current_semester?.name}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      {student.user?.role === 'rep' ? (
-                        <span className="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">Representative</span>
-                      ) : (
-                        <span className="text-slate-400 text-xs">Student</span>
-                      )}
-                    </td>
-                    {activeTab === 'pending' && (
-                      <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleApprove(student.id);
-                          }}
-                          className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
-                        >
-                          Approve
-                        </button>
-                      </td>
-                    )}
+          <div className="flex-1">
+            {/* Desktop View */}
+            <div className="hidden lg:block overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  <tr>
+                    <th className="px-6 py-4">Student</th>
+                    <th className="px-6 py-4">Reg Number</th>
+                    <th className="px-6 py-4">Current Semester</th>
+                    <th className="px-6 py-4 text-right">Role</th>
+                    {activeTab === 'pending' && <th className="px-6 py-4 text-right">Actions</th>}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100 italic-none">
+                  {students.map((student) => (
+                    <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="px-6 py-4 cursor-pointer" onClick={() => handleOpenEdit(student)}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs uppercase group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-all overflow-hidden">
+                            {student.user?.avatar ? (
+                              <img src={student.user.avatar} className="w-full h-full object-cover" alt="" />
+                            ) : (
+                              student.user?.name?.charAt(0)
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-all">{student.user?.name}</p>
+                            <p className="text-xs text-slate-400">{student.user?.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 font-mono text-xs text-slate-600">
+                        {student.registration_number}
+                      </td>
+                      <td className="px-6 py-4 text-xs font-medium text-slate-500">
+                        {student.current_semester?.name}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        {student.user?.role === 'rep' ? (
+                          <span className="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">Representative</span>
+                        ) : (
+                          <span className="text-slate-400 text-xs">Student</span>
+                        )}
+                      </td>
+                      {activeTab === 'pending' && (
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleApprove(student.id);
+                            }}
+                            className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+                          >
+                            Approve
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile View */}
+            <div className="lg:hidden divide-y divide-slate-50">
+               {students.length > 0 ? students.map((student) => (
+                  <div key={student.id} className="p-4 flex items-center justify-between hover:bg-slate-50 active:bg-slate-100 transition-colors" onClick={() => handleOpenEdit(student)}>
+                     <div className="flex items-center gap-4 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-slate-400 text-sm overflow-hidden shrink-0">
+                          {student.user?.avatar ? (
+                            <img src={student.user.avatar} className="w-full h-full object-cover" alt="" />
+                          ) : (
+                            student.user?.name?.charAt(0)
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                           <p className="text-sm font-black text-slate-900 truncate">{student.user?.name}</p>
+                           <p className="text-[10px] font-mono text-slate-400 mt-0.5">{student.registration_number}</p>
+                        </div>
+                     </div>
+                     <div className="flex flex-col items-end gap-2 shrink-0">
+                        {student.user?.role === 'rep' && (
+                           <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest">Rep</span>
+                        )}
+                        {activeTab === 'pending' && (
+                           <button
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               handleApprove(student.id);
+                             }}
+                             className="bg-emerald-600 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase shadow-lg shadow-emerald-200"
+                           >
+                             Approve
+                           </button>
+                        )}
+                     </div>
+                  </div>
+               )) : (
+                 <div className="p-10 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">No students found</div>
+               )}
+            </div>
           </div>
         )}
       </div>

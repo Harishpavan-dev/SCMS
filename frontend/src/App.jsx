@@ -27,6 +27,7 @@ import { HodDashboard } from './pages/dashboards/HodDashboard';
 import { SubjectsPage } from './pages/subjects/SubjectsPage';
 import { ProfilePage } from './pages/profile/ProfilePage';
 import { ResultsPage } from './pages/results/ResultsPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 
 function App() {
   const { isAuthenticated, checkAuth } = useAuthStore();
@@ -53,6 +54,7 @@ function App() {
           path="/login" 
           element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />} 
         />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         
         <Route element={<ProtectedLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />

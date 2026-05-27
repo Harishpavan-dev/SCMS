@@ -54,41 +54,41 @@ export const StudentDashboard = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto pb-20">
-      <div className="bg-gradient-to-r from-blue-700 via-indigo-800 to-blue-900 p-10 rounded-[2.5rem] shadow-xl text-white relative overflow-hidden">
+      <div className="bg-gradient-to-r from-blue-700 via-indigo-800 to-blue-900 p-6 sm:p-10 rounded-[2.5rem] shadow-xl text-white relative overflow-hidden">
         <div className="relative z-10">
-            <h1 className="text-4xl font-black tracking-tighter">Student Hub</h1>
-            <p className="text-blue-100 mt-2 font-medium">Hello, {user.name}. Welcome back to your learning terminal.</p>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tighter">Student Hub</h1>
+            <p className="text-blue-100 mt-2 font-medium text-sm sm:text-base">Hello, {user.name}. Welcome back to your learning terminal.</p>
         </div>
-        <div className="absolute top-0 right-0 p-10 opacity-10">
-            <ChartBarIcon className="w-40 h-40" />
+        <div className="absolute top-0 right-0 p-6 sm:p-10 opacity-10">
+            <ChartBarIcon className="w-24 sm:w-40 h-24 sm:h-40" />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm relative overflow-hidden group">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="bg-white p-5 sm:p-8 rounded-[2rem] border border-slate-200 shadow-sm relative overflow-hidden group">
           <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">Overall Rating</p>
-          <p className={clsx("text-5xl font-black mt-2", (summary.overall_percentage || 0) >= 80 ? "text-emerald-500" : "text-amber-500")}>{summary.overall_percentage || 0}%</p>
+          <p className={clsx("text-3xl sm:text-5xl font-black mt-2", (summary.overall_percentage || 0) >= 80 ? "text-emerald-500" : "text-amber-500")}>{summary.overall_percentage || 0}%</p>
           <div className="absolute bottom-0 left-0 w-full h-1 bg-slate-100 overflow-hidden">
              <div className={clsx("h-full transition-all duration-1000", (summary.overall_percentage || 0) >= 80 ? "bg-emerald-500" : "bg-amber-500")} style={{ width: `${summary.overall_percentage}%` }}></div>
           </div>
         </div>
         
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
+        <div className="bg-white p-5 sm:p-8 rounded-[2rem] border border-slate-200 shadow-sm">
           <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">Present Count</p>
-          <p className="text-5xl font-black text-slate-800 mt-2">{summary.total_present || 0}</p>
-          <p className="text-xs font-bold text-slate-400 mt-2">Validated Sessions</p>
+          <p className="text-3xl sm:text-5xl font-black text-slate-800 mt-2">{summary.total_present || 0}</p>
+          <p className="text-xs font-bold text-slate-400 mt-1 sm:mt-2">Validated Sessions</p>
         </div>
 
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
+        <div className="bg-white p-5 sm:p-8 rounded-[2rem] border border-slate-200 shadow-sm">
           <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">Absence Log</p>
-          <p className="text-5xl font-black text-red-500 mt-2">{summary.total_absent || 0}</p>
-          <p className="text-xs font-bold text-slate-400 mt-2">Check eligibility limits</p>
+          <p className="text-3xl sm:text-5xl font-black text-red-500 mt-2">{summary.total_absent || 0}</p>
+          <p className="text-xs font-bold text-slate-400 mt-1 sm:mt-2">Check eligibility</p>
         </div>
 
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
+        <div className="bg-white p-5 sm:p-8 rounded-[2rem] border border-slate-200 shadow-sm">
           <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">Total Segment</p>
-          <p className="text-5xl font-black text-blue-600 mt-2">{summary.total_sessions || 0}</p>
-          <p className="text-xs font-bold text-slate-400 mt-2">Active Class Load</p>
+          <p className="text-3xl sm:text-5xl font-black text-blue-600 mt-2">{summary.total_sessions || 0}</p>
+          <p className="text-xs font-bold text-slate-400 mt-1 sm:mt-2">Active Class Load</p>
         </div>
       </div>
 
@@ -98,20 +98,20 @@ export const StudentDashboard = () => {
               <ChartBarIcon className="w-5 h-5 text-indigo-500" />
               Subject Breakdown
            </h3>
-           <div className="space-y-4">
+           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
               {summary.summary?.map(sub => (
-                <div key={sub.subject_id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:border-indigo-300 transition-all group">
+                <div key={sub.subject_id} className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-100 shadow-sm hover:border-indigo-300 transition-all group">
                    <div className="flex justify-between items-start mb-4">
                       <div className="flex-1">
                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Module</p>
-                         <h4 className="font-black text-slate-800 group-hover:text-indigo-600 transition-colors">{sub.subject_name}</h4>
+                         <h4 className="font-black text-slate-800 group-hover:text-indigo-600 transition-colors line-clamp-1">{sub.subject_name}</h4>
                       </div>
                       <span className={clsx(
                         "text-lg font-black",
                         sub.percentage >= 80 ? "text-emerald-500" : "text-amber-500"
                       )}>{sub.percentage}%</span>
                    </div>
-                   <div className="flex items-center gap-4 text-xs font-bold text-slate-500">
+                   <div className="flex items-center gap-4 text-[10px] sm:text-xs font-bold text-slate-500">
                       <div className="flex items-center gap-1.5">
                          <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
                          {sub.present} Present
@@ -128,16 +128,16 @@ export const StudentDashboard = () => {
 
         <div className="lg:col-span-8">
           <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden h-full flex flex-col">
-            <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
               <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
                 <ClipboardDocumentCheckIcon className="w-6 h-6 text-blue-600" />
-                Attendance Records
+                Records
               </h3>
               
-              <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-200 w-full md:w-auto">
-                <FunnelIcon className="w-5 h-5 text-slate-400 ml-2" />
+              <div className="flex items-center gap-2 bg-slate-50 p-1.5 sm:p-2 rounded-2xl border border-slate-200 w-full sm:w-auto">
+                <FunnelIcon className="w-4 h-4 sm:w-5 h-5 text-slate-400 ml-2" />
                 <select 
-                  className="bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-700 pr-8"
+                  className="bg-transparent border-none focus:ring-0 text-xs sm:text-sm font-bold text-slate-700 pr-8 w-full"
                   value={selectedSubject}
                   onChange={(e) => setSelectedSubject(e.target.value)}
                 >
@@ -147,58 +147,94 @@ export const StudentDashboard = () => {
               </div>
             </div>
 
-            <div className="overflow-x-auto flex-1">
-              <table className="w-full text-left">
-                <thead className="bg-slate-50 text-slate-500 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
-                  <tr>
-                    <th className="px-8 py-4">Date & Time</th>
-                    <th className="px-8 py-4">Subject</th>
-                    <th className="px-8 py-4">Period</th>
-                    <th className="px-8 py-4">Method</th>
-                    <th className="px-8 py-4 text-center">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {loading ? (
+            <div className="flex-1 overflow-y-auto">
+              {/* Desktop Table View */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-50 text-slate-500 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
                     <tr>
-                      <td colSpan="5" className="px-8 py-12 text-center text-slate-400">Loading records...</td>
+                      <th className="px-8 py-4">Date & Time</th>
+                      <th className="px-8 py-4">Subject</th>
+                      <th className="px-8 py-4">Period</th>
+                      <th className="px-8 py-4">Method</th>
+                      <th className="px-8 py-4 text-center">Status</th>
                     </tr>
-                  ) : attendance.length > 0 ? (
-                    attendance.map((record) => (
-                      <tr key={record.id} className="hover:bg-slate-50 transition-colors group">
-                        <td className="px-8 py-5">
-                          <p className="font-bold text-slate-900">{new Date(record.marked_at).toLocaleDateString()}</p>
-                          <p className="text-xs text-slate-500">{new Date(record.marked_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-                        </td>
-                        <td className="px-8 py-5">
-                          <p className="font-black text-slate-700">{record.attendance_session?.class_session?.subject?.name}</p>
-                        </td>
-                        <td className="px-8 py-5">
-                          <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg font-bold text-xs uppercase">
-                            Period {record.attendance_session?.class_session?.period || 'N/A'}
-                          </span>
-                        </td>
-                        <td className="px-8 py-5">
-                          <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter">{record.method}</span>
-                        </td>
-                        <td className="px-8 py-5 text-center">
-                          <span className={clsx(
-                            "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm",
-                            record.status === 'present' ? "bg-emerald-100 text-emerald-700" : 
-                            record.status === 'absent' ? "bg-red-100 text-red-700" : "bg-slate-100 text-slate-500"
-                          )}>
-                            {record.status}
-                          </span>
-                        </td>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {loading ? (
+                      <tr>
+                        <td colSpan="5" className="px-8 py-12 text-center text-slate-400">Loading records...</td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="5" className="px-8 py-12 text-center text-slate-400">No records found</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                    ) : attendance.length > 0 ? (
+                      attendance.map((record) => (
+                        <tr key={record.id} className="hover:bg-slate-50 transition-colors group">
+                          <td className="px-8 py-5">
+                            <p className="font-bold text-slate-900">{new Date(record.marked_at).toLocaleDateString()}</p>
+                            <p className="text-xs text-slate-500">{new Date(record.marked_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                          </td>
+                          <td className="px-8 py-5">
+                            <p className="font-black text-slate-700">{record.attendance_session?.class_session?.subject?.name}</p>
+                          </td>
+                          <td className="px-8 py-5">
+                            <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg font-bold text-xs uppercase">
+                              P{record.attendance_session?.class_session?.period || 'N/A'}
+                            </span>
+                          </td>
+                          <td className="px-8 py-5">
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter">{record.method}</span>
+                          </td>
+                          <td className="px-8 py-5 text-center">
+                            <span className={clsx(
+                              "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm",
+                              record.status === 'present' ? "bg-emerald-100 text-emerald-700" : 
+                              record.status === 'absent' ? "bg-red-100 text-red-700" : "bg-slate-100 text-slate-500"
+                            )}>
+                              {record.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="5" className="px-8 py-12 text-center text-slate-400">No records found</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="sm:hidden p-4 space-y-4">
+                 {loading ? (
+                   <p className="text-center py-10 text-slate-400 text-xs font-bold uppercase tracking-widest">Initialising Logs...</p>
+                 ) : attendance.length > 0 ? (
+                   attendance.map((record) => (
+                      <div key={record.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
+                         <div className="flex justify-between items-start">
+                            <div>
+                               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(record.marked_at).toLocaleDateString()}</p>
+                               <h4 className="font-black text-slate-900 leading-tight mt-1">{record.attendance_session?.class_session?.subject?.name}</h4>
+                            </div>
+                            <span className={clsx(
+                              "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest",
+                              record.status === 'present' ? "bg-emerald-500 text-white" : "bg-red-500 text-white"
+                            )}>
+                              {record.status}
+                            </span>
+                         </div>
+                         <div className="flex items-center gap-3 text-[10px] font-bold text-slate-500 pt-1">
+                            <span className="bg-white px-2 py-0.5 rounded border border-slate-200 uppercase">Period {record.attendance_session?.class_session?.period}</span>
+                            <span className="opacity-50">•</span>
+                            <span className="uppercase">{new Date(record.marked_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                            <span className="opacity-50">•</span>
+                            <span className="uppercase">{record.method}</span>
+                         </div>
+                      </div>
+                   ))
+                 ) : (
+                   <p className="text-center py-10 text-slate-400 text-xs">No records available</p>
+                 )}
+              </div>
             </div>
           </div>
         </div>

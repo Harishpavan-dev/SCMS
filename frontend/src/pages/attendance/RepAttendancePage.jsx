@@ -377,7 +377,7 @@ export const RepAttendancePage = () => {
    }
 
    return (
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 pb-32 space-y-8 animate-in fade-in duration-500">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 pb-32 space-y-6 md:space-y-10 animate-in fade-in duration-500">
 
          {/* HEADER & TABS */}
          {!sessionId && (
@@ -387,7 +387,7 @@ export const RepAttendancePage = () => {
                   <p className="text-slate-500 text-sm font-medium">Manage batch attendance and sync reports effortlessly.</p>
                </div>
 
-               <div className="flex p-1 bg-slate-100/80 backdrop-blur-md rounded-2xl w-full md:w-fit self-center md:self-auto">
+               <div className="flex p-1.5 bg-slate-100/80 backdrop-blur-md rounded-2xl w-full md:w-fit self-center md:self-auto shadow-inner">
                   <button
                      onClick={() => setActiveTab('mark')}
                      className={clsx(
@@ -429,7 +429,7 @@ export const RepAttendancePage = () => {
                         <p className="text-slate-500 text-sm max-w-sm mx-auto">Select the lecture details to boot the attendance marking terminal.</p>
                      </div>
 
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                         <div className="space-y-1.5 text-left">
                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Subject</label>
                            <select
@@ -559,20 +559,25 @@ export const RepAttendancePage = () => {
                         {filteredStudents.map((student, idx) => {
                            const status = attendanceRecords[student.id] || 'unmarked';
                            return (
-                              <div key={student.id} className={clsx("p-5 rounded-3xl border transition-all shadow-sm", status === 'present' ? "bg-emerald-50 border-emerald-100" : status === 'absent' ? "bg-red-50 border-red-100" : "bg-white border-slate-100")}>
-                                 <div className="flex justify-between items-start mb-4">
-                                    <div className="flex gap-4">
-                                       <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center font-black text-xs text-indigo-600 shadow-sm border border-slate-50">{idx + 1}</div>
-                                       <div>
-                                          <h3 className="text-sm font-black text-slate-900 leading-tight">{student.user.name}</h3>
-                                          <p className="text-[10px] font-bold text-slate-400 font-mono italic">{student.registration_number}</p>
+                              <div key={student.id} className={clsx("p-4 sm:p-5 rounded-[2rem] border transition-all shadow-sm relative overflow-hidden group", status === 'present' ? "bg-emerald-50/50 border-emerald-100" : status === 'absent' ? "bg-red-50/50 border-red-100" : "bg-white border-slate-100 hover:border-slate-200")}>
+                                 {/* Decorative accent for present/absent */}
+                                 {status !== 'unmarked' && (
+                                    <div className={clsx("absolute top-0 right-0 w-16 h-16 -mr-8 -mt-8 rounded-full blur-2xl opacity-20", status === 'present' ? "bg-emerald-500" : "bg-red-500")} />
+                                 )}
+                                 
+                                 <div className="flex justify-between items-start mb-4 relative z-10">
+                                    <div className="flex gap-3 sm:gap-4">
+                                       <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-2xl flex items-center justify-center font-black text-[10px] sm:text-xs text-indigo-600 shadow-sm border border-slate-50">{idx + 1}</div>
+                                       <div className="min-w-0">
+                                          <h3 className="text-sm font-black text-slate-900 leading-tight truncate">{student.user.name}</h3>
+                                          <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 font-mono italic">{student.registration_number}</p>
                                        </div>
                                     </div>
-                                    <button onClick={() => setSelectedStudentDetail(student)} className="p-2 text-slate-400"><EllipsisVerticalIcon className="w-5 h-5" /></button>
+                                    <button onClick={() => setSelectedStudentDetail(student)} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"><EllipsisVerticalIcon className="w-5 h-5" /></button>
                                  </div>
-                                 <div className="flex gap-3">
-                                    <button onClick={() => updateStatus(student.id, 'present')} className={clsx("flex-1 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all", status === 'present' ? "bg-emerald-500 text-white" : "bg-white text-slate-400 border border-slate-100")}>Present</button>
-                                    <button onClick={() => updateStatus(student.id, 'absent')} className={clsx("flex-1 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all", status === 'absent' ? "bg-red-500 text-white" : "bg-white text-slate-400 border border-slate-100")}>Absent</button>
+                                 <div className="flex gap-2 sm:gap-3 relative z-10">
+                                    <button onClick={() => updateStatus(student.id, 'present')} className={clsx("flex-1 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider transition-all", status === 'present' ? "bg-emerald-500 text-white shadow-lg shadow-emerald-100" : "bg-white text-slate-400 border border-slate-100 hover:bg-slate-50")}>Present</button>
+                                    <button onClick={() => updateStatus(student.id, 'absent')} className={clsx("flex-1 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider transition-all", status === 'absent' ? "bg-red-500 text-white shadow-lg shadow-red-100" : "bg-white text-slate-400 border border-slate-100 hover:bg-slate-50")}>Absent</button>
                                  </div>
                               </div>
                            );
@@ -580,19 +585,19 @@ export const RepAttendancePage = () => {
                      </div>
 
                      {/* Floating Action Bar */}
-                     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-xl bg-slate-900/95 backdrop-blur-xl p-4 md:p-5 rounded-[2.5rem] shadow-2xl border border-white/10 text-white flex items-center justify-between z-50">
-                        <div className="flex items-center gap-6 px-4">
-                           <div className="text-center group cursor-help" onClick={() => setShowAnalytics(true)}>
+                     <div className="fixed bottom-6 sm:bottom-8 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:w-[92%] max-w-xl bg-slate-900/95 backdrop-blur-xl p-4 sm:p-5 rounded-[2rem] md:rounded-[2.5rem] shadow-2xl border border-white/10 text-white flex items-center justify-between z-50 transition-all duration-300">
+                        <div className="flex items-center gap-4 sm:gap-8 px-2 sm:px-4">
+                           <div className="text-center group cursor-help shrink-0" onClick={() => setShowAnalytics(true)}>
                               <p className="text-[7px] font-black text-slate-500 uppercase">Rate</p>
-                              <p className="text-sm font-black text-indigo-400">{liveStats.percent}%</p>
+                              <p className="text-xs sm:text-sm font-black text-indigo-400">{liveStats.percent}%</p>
                            </div>
-                           <div className="w-px h-6 bg-white/10"></div>
-                           <div className="flex gap-4">
-                              <div className="text-center"><p className="text-[7px] font-black text-slate-500 uppercase">P</p><p className="text-sm font-black text-emerald-400">{liveStats.present}</p></div>
-                              <div className="text-center"><p className="text-[7px] font-black text-slate-500 uppercase">A</p><p className="text-sm font-black text-red-400">{liveStats.absent}</p></div>
+                           <div className="w-px h-6 bg-white/10 shrink-0"></div>
+                           <div className="flex gap-3 sm:gap-6 shrink-0">
+                              <div className="text-center"><p className="text-[7px] font-black text-slate-500 uppercase">P</p><p className="text-xs sm:text-sm font-black text-emerald-400">{liveStats.present}</p></div>
+                              <div className="text-center"><p className="text-[7px] font-black text-slate-500 uppercase">A</p><p className="text-xs sm:text-sm font-black text-red-400">{liveStats.absent}</p></div>
                            </div>
                         </div>
-                        <button onClick={() => setShowWhatsAppSummary(true)} className="bg-indigo-600 hover:bg-indigo-500 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2">
+                        <button onClick={() => setShowWhatsAppSummary(true)} className="bg-indigo-600 hover:bg-indigo-500 px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/20 active:scale-95">
                            Summary <ArrowRightIcon className="w-4 h-4" />
                         </button>
                      </div>
@@ -603,7 +608,7 @@ export const RepAttendancePage = () => {
 
          {activeTab === 'history' && (
             <div className="space-y-6 animate-in fade-in duration-500">
-               <div className="bg-white p-6 md:p-12 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-10">
+               <div className="bg-white p-5 sm:p-8 md:p-12 rounded-[2rem] md:rounded-[3rem] border border-slate-100 shadow-sm space-y-8 md:space-y-12">
 
                   <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
                      <div className="space-y-3">
@@ -619,8 +624,8 @@ export const RepAttendancePage = () => {
                      </div>
                   </div>
 
-                  <div className="flex flex-col lg:flex-row gap-4 items-center bg-slate-50/50 p-4 rounded-[2rem]">
-                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full lg:w-auto flex-1">
+                  <div className="flex flex-col lg:flex-row gap-4 items-center bg-slate-50/50 p-4 md:p-5 rounded-[2rem] md:rounded-[2.5rem]">
+                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full lg:w-auto flex-1">
                         <input type="date" value={historyDate} onChange={(e) => setHistoryDate(e.target.value)} className="w-full bg-white border border-slate-200 rounded-2xl px-5 py-3 text-xs font-bold outline-none" />
                         <select value={historySubjectId} onChange={(e) => setHistorySubjectId(e.target.value)} className="w-full bg-white border border-slate-200 rounded-2xl px-5 py-3 text-xs font-bold outline-none appearance-none">{subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
                         <select value={historyPeriod} onChange={(e) => setHistoryPeriod(Number(e.target.value))} className="w-full bg-white border border-slate-200 rounded-2xl px-5 py-3 text-xs font-bold outline-none appearance-none">{[1, 2, 3, 4, 5, 6, 7, 8].map(p => <option key={p} value={p}>P{p}</option>)}</select>
@@ -637,33 +642,58 @@ export const RepAttendancePage = () => {
 
                   {/* Responsive Archive View */}
                   <div className="rounded-[2rem] border border-slate-100 overflow-hidden bg-white shadow-sm">
-                     <table className="w-full text-left">
-                        <thead className="bg-[#4169E1] text-white italic">
-                           <tr className="text-[10px] font-black uppercase tracking-widest">
-                              <th className="px-10 py-5 text-center border-r border-white/10 w-48">Registration</th>
-                              <th className="px-10 py-5 border-r border-white/10">Full Legal Name</th>
-                              <th className="px-10 py-5 text-center w-40">Status Code</th>
-                           </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                           {loading ? (
-                              <tr><td colSpan="3" className="py-24 text-center text-slate-300 font-black uppercase text-[10px] tracking-[0.5em] animate-pulse italic">Connecting Node...</td></tr>
-                           ) : historicalRecords.map(item => (
-                              <tr key={item.student.id} onClick={() => setSelectedStudentDetail(item.student)} className="hover:bg-slate-50/50 cursor-pointer transition-all">
-                                 <td className="px-10 py-5 font-mono text-xs text-center text-slate-500 font-bold">{item.student.registration_number}</td>
-                                 <td className="px-10 py-5 text-[11px] font-black text-slate-900 uppercase tracking-tighter">{item.student.user?.name}</td>
-                                 <td className="px-10 py-5 text-center">
-                                    <span className={clsx(
-                                       "px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest",
-                                       item.status === 'present' ? "bg-emerald-100 text-emerald-600" : item.status === 'absent' ? "bg-red-100 text-red-600" : "bg-slate-100 text-slate-300"
-                                    )}>
-                                       {item.status === 'unmarked' ? 'Not Marked' : item.status}
-                                    </span>
-                                 </td>
+                     {/* Desktop History Table */}
+                     <div className="hidden md:block">
+                        <table className="w-full text-left">
+                           <thead className="bg-[#4169E1] text-white italic">
+                              <tr className="text-[10px] font-black uppercase tracking-widest">
+                                 <th className="px-10 py-5 text-center border-r border-white/10 w-48">Registration</th>
+                                 <th className="px-10 py-5 border-r border-white/10">Full Legal Name</th>
+                                 <th className="px-10 py-5 text-center w-40">Status Code</th>
                               </tr>
-                           ))}
-                        </tbody>
-                     </table>
+                           </thead>
+                           <tbody className="divide-y divide-slate-50 text-uppercase">
+                              {loading ? (
+                                 <tr><td colSpan="3" className="py-24 text-center text-slate-300 font-black uppercase text-[10px] tracking-[0.5em] animate-pulse italic">Connecting Node...</td></tr>
+                              ) : historicalRecords.map(item => (
+                                 <tr key={item.student.id} onClick={() => setSelectedStudentDetail(item.student)} className="hover:bg-slate-50/50 cursor-pointer transition-all">
+                                    <td className="px-10 py-5 font-mono text-xs text-center text-slate-500 font-bold">{item.student.registration_number}</td>
+                                    <td className="px-10 py-5 text-[11px] font-black text-slate-900 uppercase tracking-tighter">{item.student.user?.name}</td>
+                                    <td className="px-10 py-5 text-center">
+                                       <span className={clsx(
+                                          "px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest",
+                                          item.status === 'present' ? "bg-emerald-100 text-emerald-600" : item.status === 'absent' ? "bg-red-100 text-red-600" : "bg-slate-100 text-slate-300"
+                                       )}>
+                                          {item.status === 'unmarked' ? 'Not Marked' : item.status}
+                                       </span>
+                                    </td>
+                                 </tr>
+                              ))}
+                           </tbody>
+                        </table>
+                     </div>
+
+                     {/* Mobile History Cards */}
+                     <div className="md:hidden divide-y divide-slate-50">
+                        {loading ? (
+                            <div className="py-20 text-center text-slate-300 font-black uppercase text-[10px] tracking-widest">Scanning History...</div>
+                        ) : historicalRecords.length > 0 ? historicalRecords.map(item => (
+                           <div key={item.student.id} onClick={() => setSelectedStudentDetail(item.student)} className="p-5 flex items-center justify-between active:bg-slate-50 transition-colors">
+                              <div className="min-w-0">
+                                 <p className="text-[9px] font-mono text-slate-400 uppercase italic font-bold">{item.student.registration_number}</p>
+                                 <h4 className="text-xs font-black text-slate-900 uppercase truncate mt-0.5">{item.student.user?.name}</h4>
+                              </div>
+                              <span className={clsx(
+                                 "px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest shrink-0 ml-4",
+                                 item.status === 'present' ? "bg-emerald-500 text-white" : item.status === 'absent' ? "bg-red-500 text-white" : "bg-slate-100 text-slate-400"
+                              )}>
+                                 {item.status === 'unmarked' ? 'SKIP' : item.status}
+                              </span>
+                           </div>
+                        )) : (
+                          <p className="py-20 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">Empty Archive</p>
+                        )}
+                     </div>
                   </div>
                </div>
             </div>

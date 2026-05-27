@@ -121,63 +121,66 @@ export const SubjectsPage = () => {
   return (
     <div className="space-y-10 animate-in fade-in duration-700 max-w-7xl mx-auto pb-20">
       {/* COMMAND HEADER */}
-      <div className="bg-white p-10 rounded-[2.5rem] shadow-sm relative overflow-hidden border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-8">
-        <div className="flex items-center gap-5">
-           <div className="p-4 bg-indigo-50 rounded-2xl">
-              <BookOpenIcon className="w-8 h-8 text-indigo-600" />
+      <div className="bg-white p-6 sm:p-10 rounded-2xl sm:rounded-[2.5rem] shadow-sm relative overflow-hidden border border-slate-100 flex flex-col lg:flex-row justify-between items-center gap-6 sm:gap-8 text-center sm:text-left">
+        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
+           <div className="p-3 sm:p-4 bg-indigo-50 rounded-2xl">
+              <BookOpenIcon className="w-6 h-6 sm:w-8 sm:h-8 text-indigo-600" />
            </div>
            <div>
-              <h1 className="text-2xl font-bold text-slate-900">Curriculum Repository</h1>
-              <p className="text-slate-400 text-xs font-medium tracking-wide">Manage and organize HNDIT academic subjects</p>
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Curriculum Registry</h1>
+              <p className="text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Manage HNDIT academic subjects</p>
            </div>
         </div>
         
-        <div className="flex items-center gap-4 w-full md:w-auto">
-           <div className="relative flex-1 md:w-80 group">
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+           <div className="relative w-full sm:w-80 group">
               <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input 
                 type="text" 
                 placeholder="Search subjects..." 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all font-bold"
               />
            </div>
            {isAdmin && (
               <button 
                 onClick={() => handleOpenModal()}
-                className="p-3.5 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95 text-xs font-black uppercase tracking-widest"
               >
                  <PlusIcon className="w-5 h-5" />
+                 <span className="sm:hidden">Add Subject</span>
               </button>
            )}
         </div>
       </div>
 
       {/* FILTERS */}
-      <div className="flex flex-wrap items-center justify-between gap-6">
-         <div className="flex flex-wrap gap-2">
-            <button 
-               onClick={() => setSelectedSemester('all')}
-               className={clsx(
-                  "px-6 py-2.5 rounded-xl text-xs font-bold transition-all border",
-                  selectedSemester === 'all' ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50"
-               )}
-            >
-               All Semesters
-            </button>
-            {semesters.map(sem => (
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+         <div className="w-full overflow-x-auto pb-2 -mb-2">
+            <div className="flex gap-2 min-w-max">
                <button 
-                  key={sem.id}
-                  onClick={() => setSelectedSemester(sem.id)}
+                  onClick={() => setSelectedSemester('all')}
                   className={clsx(
-                     "px-6 py-2.5 rounded-xl text-xs font-bold transition-all border",
-                     selectedSemester === sem.id ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-50" : "bg-white text-slate-500 border-slate-100 hover:text-indigo-600 hover:border-indigo-100"
+                     "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
+                     selectedSemester === 'all' ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50"
                   )}
                >
-                  {sem.name}
+                  All Semesters
                </button>
-            ))}
+               {semesters.map(sem => (
+                  <button 
+                     key={sem.id}
+                     onClick={() => setSelectedSemester(sem.id)}
+                     className={clsx(
+                        "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
+                        selectedSemester === sem.id ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-50" : "bg-white text-slate-500 border-slate-100 hover:text-indigo-600 hover:border-indigo-100"
+                     )}
+                  >
+                     {sem.name}
+                  </button>
+               ))}
+            </div>
          </div>
 
          <div className="bg-white p-1 rounded-xl border border-slate-100 flex">

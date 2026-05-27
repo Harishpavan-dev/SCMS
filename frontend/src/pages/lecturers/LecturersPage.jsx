@@ -208,35 +208,35 @@ export const LecturersPage = () => {
   return (
     <div className="space-y-8 animate-in fade-in duration-700 max-w-7xl mx-auto pb-20">
       {/* PROFESSIONAL HEADER SECTON */}
-      <div className="bg-white p-8 md:p-10 rounded-3xl shadow-sm border border-slate-200/60 relative overflow-hidden">
+      <div className="bg-white p-6 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/60 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50/50 rounded-full blur-3xl -mr-20 -mt-20"></div>
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-          <div>
-            <div className="flex items-center gap-4 mb-2">
-              <div className="p-3 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200">
-                <AcademicCapIcon className="w-6 h-6 text-white" />
-              </div>
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900">Faculty Registry</h1>
+        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-center gap-6 sm:gap-8 text-center sm:text-left">
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
+            <div className="p-3 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200">
+              <AcademicCapIcon className="w-6 h-6 text-white" />
             </div>
-            <p className="text-slate-500 text-sm ml-14">Manage and monitor academic staff and domain experts</p>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 uppercase italic">Faculty Registry</h1>
+              <p className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-widest mt-1">Manage academic staff and domain experts</p>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
-            <div className="relative flex-1 md:w-72 group">
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+            <div className="relative w-full sm:w-72 group">
               <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
               <input
                 type="text"
                 placeholder="Search by name, email, or ID..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all shadow-sm"
+                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all shadow-sm"
               />
             </div>
 
             {user?.role === 'admin' && (
               <button
                 onClick={handleOpenRegister}
-                className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-slate-900 transition-all flex items-center gap-2 shadow-lg shadow-indigo-100 active:scale-95"
+                className="w-full sm:w-auto px-6 py-3.5 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-100 active:scale-95"
               >
                 <PlusIcon className="w-5 h-5" />
                 Add Lecturer
