@@ -423,7 +423,8 @@ class AttendanceController extends Controller
             'semester_id' => 'required|exists:semesters,id',
             'date' => 'required|date',
             'period' => 'required|integer',
-            'student_id' => 'required|exists:students,id',
+            'student_id' => 'required_without:registration_number|nullable|exists:students,id',
+            'registration_number' => 'required_without:student_id|nullable|exists:students,registration_number',
             'status' => 'required|in:present,absent,unmarked',
         ]);
 
@@ -432,6 +433,12 @@ class AttendanceController extends Controller
         }
 
         $user = $request->user();
+
+        // 1. Resolve student ID if registration number is provided
+        $studentId = $request->student_id;
+        if (!$studentId && $request->registration_number) {
+            $studentId = Student::where('registration_number', $request->registration_number)->value('id');
+        }
 
         // Security Check: Reps can only mark for today
         if ($user->role === 'rep' && $request->date !== now()->toDateString()) {
@@ -458,12 +465,12 @@ class AttendanceController extends Controller
         $record = AttendanceRecord::updateOrCreate(
             [
                 'class_session_id' => $session->id,
-                'student_id' => $request->student_id,
+                'student_id' => $studentId,
             ],
             [
                 'marked_at' => now(),
                 'marked_by' => $user->id,
-                'method' => 'direct',
+                'method' => 'direct-qr',
                 'status' => $request->status,
             ]
         );

@@ -92,7 +92,7 @@ export const MyAttendancePage = () => {
     }
 
     if (subjectFilter !== 'all') {
-      filtered = filtered.filter(r => r.attendance_session?.class_session?.subject?.id === parseInt(subjectFilter));
+      filtered = filtered.filter(r => r.class_session?.subject?.id === parseInt(subjectFilter));
     }
 
     return filtered;
@@ -436,7 +436,7 @@ export const MyAttendancePage = () => {
                        {filteredRecords.map(r => (
                          <tr key={r.id} className="hover:bg-slate-50 transition-colors">
                            <td className="px-8 py-4 text-sm font-medium text-slate-600 tracking-tight">{format(new Date(r.marked_at), 'MMM dd, yyyy')}</td>
-                           <td className="px-8 py-4 text-sm font-bold text-slate-800 tracking-tight">{r.attendance_session?.class_session?.subject?.name || 'Attendance'}</td>
+                           <td className="px-8 py-4 text-sm font-bold text-slate-800 tracking-tight">{r.class_session?.subject?.name || 'Attendance'}</td>
                            <td className="px-8 py-4 text-sm text-slate-400 font-medium">{format(new Date(r.marked_at), 'hh:mm a')}</td>
                            <td className="px-8 py-4 text-right">
                              <span className={clsx(

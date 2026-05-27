@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../../api/client';
 import useAuthStore from '../../stores/authStore';
 import {
@@ -28,6 +28,7 @@ import {
    FunnelIcon,
    QrCodeIcon,
    StopIcon,
+   DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import toast from 'react-hot-toast';
@@ -35,8 +36,39 @@ import clsx from 'clsx';
 import { format, subDays, startOfWeek } from 'date-fns';
 import { Link } from 'react-router-dom';
 
+// QR CSS Overrides
+const qrStyles = `
+  #rep-scanner video {
+    object-fit: cover !important;
+    border-radius: 1.5rem !important;
+  }
+  #rep-scanner__scan_region {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  #rep-scanner__dashboard {
+    background: transparent !important;
+    border: none !important;
+    color: white !important;
+    padding: 20px !important;
+  }
+  #rep-scanner__dashboard_button {
+    background: #4f46e5 !important;
+    color: white !important;
+    border-radius: 0.75rem !important;
+    padding: 8px 16px !important;
+    font-weight: bold !important;
+    font-size: 12px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+  }
+`;
+
 export const RepAttendancePage = () => {
    const { user } = useAuthStore();
+   
+   if (!user) return null; // Prevent crash if user state is not ready
    const [activeTab, setActiveTab] = useState('mark'); // mark or history
 
    const [subjects, setSubjects] = useState([]);
@@ -59,6 +91,10 @@ export const RepAttendancePage = () => {
 
    // Search
    const [search, setSearch] = useState('');
+ 
+   // Scanner State
+   const [scannerActive, setScannerActive] = useState(false);
+   const [lastScanned, setLastScanned] = useState(null);
 
 
    // Modals
@@ -81,6 +117,54 @@ export const RepAttendancePage = () => {
          fetchHistoryRecords();
       }
    }, [activeTab, historyDate, historySubjectId, historyPeriod]);
+
+   const scanCooldown = useRef({});
+
+   useEffect(() => {
+      let scanner = null;
+      if (scannerActive) {
+         // Use setTimeout to ensure the DOM element is rendered
+         const timer = setTimeout(() => {
+            const element = document.getElementById('rep-scanner');
+            if (!element) return;
+
+            scanner = new Html5QrcodeScanner('rep-scanner', { 
+               fps: 15, 
+               qrbox: (viewfinderWidth, viewfinderHeight) => {
+                  return { width: viewfinderWidth * 0.7, height: viewfinderWidth * 0.7 };
+               },
+               aspectRatio: 1.0,
+               showTorchButtonIfSupported: true
+            }, false);
+
+            scanner.render(async (decodedText) => {
+               const now = Date.now();
+               if (scanCooldown.current[decodedText] && (now - scanCooldown.current[decodedText] < 3000)) {
+                  return;
+               }
+               
+               scanCooldown.current[decodedText] = now;
+               setLastScanned(decodedText);
+               
+               try {
+                  await updateStatus(decodedText, 'present', true);
+                  toast.success(`Marked: ${decodedText}`);
+                  const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                  audio.play().catch(() => {});
+               } catch (e) {
+                  toast.error(`Scan Error: ${decodedText}`);
+               }
+            }, (err) => {});
+         }, 100);
+
+         return () => {
+            clearTimeout(timer);
+            if (scanner) {
+               scanner.clear().catch(e => console.error(e));
+            }
+         };
+      }
+   }, [scannerActive]);
 
    const fetchDirectRecords = async () => {
       setLoading(true);
@@ -203,36 +287,43 @@ export const RepAttendancePage = () => {
       setIsLaunched(true);
    };
 
-   const updateStatus = async (studentId, status) => {
-      try {
-         const currentStatus = attendanceRecords[studentId];
-         const newStatus = currentStatus === status ? 'unmarked' : status;
-
-         // Optimistic update
-         setAttendanceRecords(prev => ({
-            ...prev,
-            [studentId]: newStatus
-         }));
-
-         const response = await api.post('/attendance/mark-direct', {
-            subject_id: selectedSubject,
-            batch_id: user?.student?.batch_id,
-            semester_id: user?.student?.current_semester_id,
-            date: selectedDate,
-            period: selectedPeriod,
-            student_id: studentId,
-            status: newStatus
-         });
-
-         if (response.data.data.session_id) {
-            setSessionId(response.data.data.session_id);
-         }
-
-      } catch (error) {
-         console.error(error);
-         toast.error('Sync failed');
-      }
-   };
+    const updateStatus = async (identifier, status, isReg = false) => {
+       try {
+          const payload = {
+             subject_id: selectedSubject,
+             batch_id: user?.student?.batch_id,
+             semester_id: user?.student?.current_semester_id,
+             date: selectedDate,
+             period: selectedPeriod,
+             status: status
+          };
+ 
+          if (isReg) {
+             payload.registration_number = identifier;
+          } else {
+             payload.student_id = identifier;
+             // Optimistic update for UI if we have the student ID
+             setAttendanceRecords(prev => ({ ...prev, [identifier]: status }));
+          }
+ 
+          const response = await api.post('/attendance/mark-direct', payload);
+ 
+          if (response.data.data.session_id) {
+             setSessionId(response.data.data.session_id);
+          }
+          
+          // If we used a registration number, we might want to refresh records 
+          // because we don't know which student ID it mapped to locally
+          if (isReg) {
+             fetchDirectRecords();
+          }
+ 
+       } catch (error) {
+          console.error(error);
+          toast.error(isReg ? 'Invalid QR Signal' : 'Sync failed');
+          throw error;
+       }
+    };
 
    const exportToExcel = () => {
       const subject = selectedHistorySubject?.name;
@@ -300,6 +391,10 @@ export const RepAttendancePage = () => {
       return encodeURIComponent(msg);
    };
 
+   const handleShareWhatsApp = () => {
+      window.open(`https://wa.me/?text=${generateWhatsAppMessage()}`, '_blank');
+   };
+
    if (user?.role !== 'rep' && user?.role !== 'admin' && user?.role !== 'hod') {
       return (
          <div className="flex items-center justify-center min-h-[70vh]">
@@ -316,7 +411,7 @@ export const RepAttendancePage = () => {
 
    return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 pb-32 space-y-6 md:space-y-10 animate-in fade-in duration-500">
-
+         <style>{qrStyles}</style>
          {/* HEADER & TABS */}
          {!isLaunched && (
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-slate-100">
@@ -443,6 +538,27 @@ export const RepAttendancePage = () => {
                         </div>
                      </div>
 
+                     {/* Scanner View */}
+                     {scannerActive && (
+                        <div className="max-w-md mx-auto bg-slate-900 rounded-[2.5rem] p-4 shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden relative border-8 border-slate-800">
+                           <div id="rep-scanner" className="w-full min-h-[250px] bg-black rounded-[2rem] overflow-hidden"></div>
+                           <div className="mt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-white px-2">
+                              <div className="text-center md:text-left">
+                                 <p className="text-[10px] font-black uppercase text-indigo-400 tracking-widest mb-1">Live Radar Signal</p>
+                                 <p className="text-sm font-bold truncate">Marking ID: <span className="text-emerald-400 underline">{lastScanned || '---'}</span></p>
+                              </div>
+                              <button 
+                                 onClick={() => setScannerActive(false)}
+                                 className="w-full md:w-auto bg-red-500 hover:bg-red-400 px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
+                              >
+                                 Shut Down Camera
+                              </button>
+                           </div>
+                           {/* HUD Decoration */}
+                           <div className="absolute top-8 left-8 w-6 h-6 border-t-2 border-l-2 border-indigo-500 opacity-20"></div>
+                           <div className="absolute top-8 right-8 w-6 h-6 border-t-2 border-r-2 border-indigo-500 opacity-20"></div>
+                        </div>
+                     )}
 
                      {/* Desktop Table Layout */}
                      <div className="hidden md:block bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
@@ -527,9 +643,14 @@ export const RepAttendancePage = () => {
                               <div className="text-center"><p className="text-[7px] font-black text-slate-500 uppercase">A</p><p className="text-xs sm:text-sm font-black text-red-400">{liveStats.absent}</p></div>
                            </div>
                         </div>
-                        <button onClick={() => setShowWhatsAppSummary(true)} className="bg-indigo-600 hover:bg-indigo-500 px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/20 active:scale-95">
-                           Summary <ArrowRightIcon className="w-4 h-4" />
-                        </button>
+                        <div className="flex gap-2">
+                           <button onClick={() => setScannerActive(!scannerActive)} className="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all">
+                              <QrCodeIcon className="w-5 h-5" />
+                           </button>
+                           <button onClick={() => setShowWhatsAppSummary(true)} className="bg-indigo-600 hover:bg-indigo-500 px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/20 active:scale-95">
+                              Summary <ArrowRightIcon className="w-4 h-4" />
+                           </button>
+                        </div>
                      </div>
                   </div>
                )}
