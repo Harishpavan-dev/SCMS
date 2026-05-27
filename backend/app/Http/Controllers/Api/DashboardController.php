@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceRecord;
-use App\Models\AttendanceSession;
 use App\Models\ClassSession;
 use App\Models\Lecturer;
 use App\Models\Notification;
@@ -52,12 +51,12 @@ class DashboardController extends Controller
                                ->whereDate('marked_at', $date)->count();
 
             } elseif ($batchId) {
-                $total = AttendanceRecord::whereHas(
-                    'attendanceSession.classSession',
-                    fn ($q) => $q->where('batch_id', $batchId)->whereDate('date', $date)
-                )->count();
+                $total = ClassSession::where('batch_id', $batchId)
+                    ->whereDate('date', $date)
+                    ->count();
+                
                 $present = AttendanceRecord::whereHas(
-                    'attendanceSession.classSession',
+                    'classSession',
                     fn ($q) => $q->where('batch_id', $batchId)->whereDate('date', $date)
                 )->where('status', 'present')->count();
 
@@ -140,18 +139,18 @@ class DashboardController extends Controller
         $batchStudentCount = Student::where('batch_id', $batchId)
                                 ->where('status', 'active')->count();
 
-        // Today's sessions for this batch
-        $todaySessions = AttendanceSession::whereHas(
-            'classSession',
-            fn ($q) => $q->where('batch_id', $batchId)->where('date', today())
-        )->with('classSession.subject')->get();
+        // Today's sessions (lectures) for this batch
+        $todayLectures = ClassSession::where('batch_id', $batchId)
+            ->where('date', today())
+            ->with(['subject', 'records'])
+            ->get();
 
-        $todayStats = $todaySessions->map(function ($session) use ($batchStudentCount) {
-            $presentCount = $session->records()->where('status', 'present')->count();
+        $todayStats = $todayLectures->map(function ($session) use ($batchStudentCount) {
+            $presentCount = $session->records->where('status', 'present')->count();
             return [
-                'subject'    => $session->classSession->subject?->name ?? '—',
-                'code'       => $session->classSession->subject?->code ?? '—',
-                'subject_id' => $session->classSession->subject?->id,
+                'subject'    => $session->subject?->name ?? '—',
+                'code'       => $session->subject?->code ?? '—',
+                'subject_id' => $session->subject?->id,
                 'present'    => $presentCount,
                 'total'      => $batchStudentCount,
             ];

@@ -25,8 +25,8 @@ class ClassSession extends Model
     public function semester() { return $this->belongsTo(Semester::class); }
     public function batch() { return $this->belongsTo(Batch::class); }
 
-    public function attendanceSessions()
+    public function records()
     {
-        return $this->hasMany(AttendanceSession::class);
+        return $this->hasMany(AttendanceRecord::class);
     }
 }

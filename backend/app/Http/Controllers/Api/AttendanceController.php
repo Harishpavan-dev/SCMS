@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\{AttendanceSession, AttendanceRecord, ClassSession, Student, Subject};
+use App\Models\{AttendanceRecord, ClassSession, Student, Subject};
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -11,272 +11,13 @@ use Illuminate\Support\Str;
 
 class AttendanceController extends Controller
 {
-    public function initializeSession(Request $request): JsonResponse
+    public function getSessionRecords(int $classSessionId): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'semester_id' => 'required|exists:semesters,id',
-            'batch_id' => 'required|exists:batches,id',
-            'subject_id' => 'required|exists:subjects,id',
-            'date' => 'required|date',
-            'period' => 'required|integer',
-            'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
-
-        $user = $request->user();
-
-        // 1. Find or create ClassSession
-        $classSession = ClassSession::firstOrCreate(
-            [
-                'semester_id' => $request->semester_id,
-                'batch_id' => $request->batch_id,
-                'subject_id' => $request->subject_id,
-                'date' => $request->date,
-                'period' => $request->period,
-                'start_time' => $request->start_time,
-            ],
-            [
-                'end_time' => $request->end_time,
-                'lecturer_id' => $user->lecturer?->id ?? null, // Fallback if admin/rep creates
-                'status' => 'ongoing',
-            ]
-        );
-
-        // 2. Find or create AttendanceSession
-        $session = AttendanceSession::where('class_session_id', $classSession->id)
-            ->where('status', 'active')
-            ->first();
-
-        if (!$session) {
-            $session = AttendanceSession::create([
-                'class_session_id' => $classSession->id,
-                'qr_code' => 'SCAN-' . Str::uuid()->toString(),
-                'qr_expires_at' => now()->addHours(4), // Active for scanning window
-                'created_by' => $user->id,
-                'status' => 'active',
-            ]);
-        }
-
-        $session->load('classSession.subject');
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Attendance session initialized.',
-            'data' => $session,
-        ]);
-    }
-
-    public function generateQR(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'class_session_id' => 'required|exists:class_sessions,id',
-            'duration_minutes' => 'nullable|integer|min:1|max:30',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
-
-        $classSession = ClassSession::findOrFail($request->class_session_id);
-        $user = $request->user();
-
-        // Verify lecturer owns this class or is admin
-        if ($user->role === 'lecturer') {
-            $lecturer = $user->lecturer;
-            if (!$lecturer || $classSession->lecturer_id !== $lecturer->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You can only generate QR for your own classes.',
-                ], 403);
-            }
-        }
-
-        // Close any existing active sessions
-        AttendanceSession::where('class_session_id', $classSession->id)
-            ->where('status', 'active')
-            ->update(['status' => 'expired']);
-
-        $duration = $request->get('duration_minutes', 10);
-        $qrCode = Str::uuid()->toString();
-
-        $session = AttendanceSession::create([
-            'class_session_id' => $classSession->id,
-            'qr_code' => $qrCode,
-            'qr_expires_at' => now()->addMinutes($duration),
-            'created_by' => $user->id,
-            'status' => 'active',
-        ]);
-
-        $session->load('classSession.subject');
-
-        return response()->json([
-            'success' => true,
-            'message' => 'QR code generated successfully.',
-            'data' => [
-                'session' => $session,
-                'qr_code' => $qrCode,
-                'expires_at' => $session->qr_expires_at->toISOString(),
-                'duration_minutes' => $duration,
-            ],
-        ]);
-    }
-
-    public function markAttendance(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'qr_code' => 'required|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
-
-        $user = $request->user();
-
-        // Find active attendance session
-        $session = AttendanceSession::where('qr_code', $request->qr_code)
-            ->where('status', 'active')
-            ->first();
-
-        if (!$session) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid QR code or session not found.',
-            ], 404);
-        }
-
-        // Check if QR is expired
-        if ($session->isExpired()) {
-            $session->update(['status' => 'expired']);
-            return response()->json([
-                'success' => false,
-                'message' => 'QR code has expired. Please request a new one.',
-            ], 410);
-        }
-
-        // Get student
-        $student = $user->student;
-        if (!$student) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Student profile not found. Only students can mark their own attendance via QR scan.',
-            ], 404);
-        }
-
-        // Check for duplicate
-        $existing = AttendanceRecord::where('attendance_session_id', $session->id)
-            ->where('student_id', $student->id)
-            ->first();
-
-        if ($existing) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Attendance already marked for this session.',
-            ], 409);
-        }
-
-        // Verify student belongs to the class batch
-        $classSession = $session->classSession;
-        if ($student->batch_id !== $classSession->batch_id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You are not enrolled in this class.',
-            ], 403);
-        }
-
-        // Mark attendance
-        $record = AttendanceRecord::create([
-            'attendance_session_id' => $session->id,
-            'student_id' => $student->id,
-            'marked_at' => now(),
-            'marked_by' => $user->id,
-            'method' => 'qr',
-            'status' => 'present',
-        ]);
-
-        // Send Notification
-        $this->notifyStudentAttendance($record);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Attendance marked successfully.',
-            'data' => $record,
-        ]);
-    }
-
-    public function markByRep(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'class_session_id' => 'required|exists:class_sessions,id',
-            'student_ids' => 'required|array|min:1',
-            'student_ids.*' => 'exists:students,id',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
-
-        $user = $request->user();
-        $classSession = ClassSession::findOrFail($request->class_session_id);
-
-        // Get or create attendance session
-        $session = AttendanceSession::where('class_session_id', $classSession->id)
-            ->latest()
-            ->first();
-
-        if (!$session) {
-            $session = AttendanceSession::create([
-                'class_session_id' => $classSession->id,
-                'qr_code' => 'REP-' . Str::uuid()->toString(),
-                'qr_expires_at' => now()->addHour(),
-                'created_by' => $user->id,
-                'status' => 'active',
-            ]);
-        }
-
-        $marked = 0;
-        $skipped = 0;
-
-        foreach ($request->student_ids as $studentId) {
-            $exists = AttendanceRecord::where('attendance_session_id', $session->id)
-                ->where('student_id', $studentId)
-                ->exists();
-
-            if (!$exists) {
-                $record = AttendanceRecord::create([
-                    'attendance_session_id' => $session->id,
-                    'student_id' => $studentId,
-                    'marked_at' => now(),
-                    'marked_by' => $user->id,
-                    'method' => 'rep',
-                    'status' => 'present',
-                ]);
-                $this->notifyStudentAttendance($record);
-                $marked++;
-            } else {
-                $skipped++;
-            }
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => "Attendance marked for {$marked} students. {$skipped} already marked.",
-            'data' => ['marked' => $marked, 'skipped' => $skipped],
-        ]);
-    }
-
-    public function getSessionRecords(int $sessionId): JsonResponse
-    {
-        $session = AttendanceSession::with([
-            'classSession.subject',
-            'classSession.lecturer.user',
+        $session = ClassSession::with([
+            'subject',
+            'lecturer.user',
             'records.student.user',
-            'creator',
-        ])->findOrFail($sessionId);
+        ])->findOrFail($classSessionId);
 
         return response()->json([
             'success' => true,
@@ -289,11 +30,11 @@ class AttendanceController extends Controller
         $student = Student::with('user')->findOrFail($studentId);
         $subjectId = $request->query('subject_id');
 
-        $query = AttendanceRecord::with(['attendanceSession.classSession.subject'])
+        $query = AttendanceRecord::with(['classSession.subject'])
             ->where('student_id', $studentId);
 
         if ($subjectId) {
-            $query->whereHas('attendanceSession.classSession', fn($q) => $q->where('subject_id', $subjectId));
+            $query->whereHas('classSession', fn($q) => $q->where('subject_id', $subjectId));
         }
 
         $records = $query->latest('marked_at')->paginate(20);
@@ -306,17 +47,16 @@ class AttendanceController extends Controller
         $totalSessionsCounted = 0;
 
         foreach ($subjects as $subject) {
-            $totalSubSessions = AttendanceSession::whereHas('classSession', function($q) use ($student, $subject) {
-                $q->where('batch_id', $student->batch_id)
+            $totalSubSessions = ClassSession::where('batch_id', $student->batch_id)
                   ->where('semester_id', $student->current_semester_id)
-                  ->where('subject_id', $subject->id);
-            })->count();
+                  ->where('subject_id', $subject->id)
+                  ->count();
 
             if ($totalSubSessions === 0) continue;
 
             $subPresentCount = AttendanceRecord::where('student_id', $studentId)
                 ->where('status', 'present')
-                ->whereHas('attendanceSession.classSession', fn($q) => $q->where('subject_id', $subject->id))
+                ->whereHas('classSession', fn($q) => $q->where('subject_id', $subject->id))
                 ->count();
 
             $subPercentage = round(($subPresentCount / $totalSubSessions) * 100, 2);
@@ -362,15 +102,15 @@ class AttendanceController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $query = AttendanceRecord::with(['student.user', 'attendanceSession.classSession.subject']);
+        $query = AttendanceRecord::with(['student.user', 'classSession.subject']);
 
         if ($request->has('subject_id')) {
-            $query->whereHas('attendanceSession.classSession', fn($q) =>
+            $query->whereHas('classSession', fn($q) =>
                 $q->where('subject_id', $request->subject_id));
         }
 
         if ($request->has('batch_id')) {
-            $query->whereHas('attendanceSession.classSession', fn($q) =>
+            $query->whereHas('classSession', fn($q) =>
                 $q->where('batch_id', $request->batch_id));
         }
 
@@ -390,133 +130,11 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function markByScanner(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'attendance_session_id' => 'required|exists:attendance_sessions,id',
-            'registration_number' => 'required|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
-
-        $session = AttendanceSession::with('classSession')->findOrFail($request->attendance_session_id);
-        
-        // Find student by registration number
-        $student = Student::where('registration_number', $request->registration_number)->first();
-        
-        if (!$student) {
-            return response()->json([
-                'success' => false,
-                'message' => "Student with registration number {$request->registration_number} not found.",
-            ], 404);
-        }
-
-        // Scope check: Student must be in the same semester as the session
-        // This handles the "unique attendance marking scope" requirement
-        if ($student->current_semester_id !== $session->classSession->semester_id) {
-            return response()->json([
-                'success' => false,
-                'message' => "Student is not enrolled in the current semester (Semester {$session->classSession->semester_id}).",
-            ], 403);
-        }
-
-        // Check for duplicate
-        $existing = AttendanceRecord::where('attendance_session_id', $session->id)
-            ->where('student_id', $student->id)
-            ->first();
-
-        if ($existing) {
-            return response()->json([
-                'success' => false,
-                'message' => "Attendance already marked for {$student->user->name}.",
-            ], 409);
-        }
-
-        // Mark attendance
-        $record = AttendanceRecord::create([
-            'attendance_session_id' => $session->id,
-            'student_id' => $student->id,
-            'marked_at' => now(),
-            'marked_by' => $request->user()->id,
-            'method' => 'qr', // Scanned by admin
-            'status' => 'present',
-        ]);
-
-        $this->notifyStudentAttendance($record);
-
-        return response()->json([
-            'success' => true,
-            'message' => "Attendance marked for {$student->user->name}.",
-            'data' => [
-                'record' => $record,
-                'student_name' => $student->user->name,
-                'reg_number' => $student->registration_number
-            ],
-        ]);
-    }
-
-    public function toggleStatus(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'attendance_session_id' => 'required|exists:attendance_sessions,id',
-            'student_id' => 'required|exists:students,id',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
-
-        $record = AttendanceRecord::where('attendance_session_id', $request->attendance_session_id)
-            ->where('student_id', $request->student_id)
-            ->first();
-
-        $status = 'present';
-        
-        if (!$record) {
-            $record = AttendanceRecord::create([
-                'attendance_session_id' => $request->attendance_session_id,
-                'student_id' => $request->student_id,
-                'marked_at' => now(),
-                'marked_by' => $request->user()->id,
-                'method' => 'rep',
-                'status' => 'present',
-            ]);
-        } else {
-            // Cycle: present -> absent -> unmarked -> (back to present)
-            if ($record->status === 'present') {
-                $status = 'absent';
-            } elseif ($record->status === 'absent') {
-                $status = 'unmarked';
-            } else {
-                $status = 'present';
-            }
-            
-            $record->update(['status' => $status]);
-        }
-
-        // Send Push Notification
-        if ($status !== 'unmarked') {
-            $this->notifyStudentAttendance($record);
-        }
-
-        // WhatsApp Notification Trigger (Mock)
-        if ($status !== 'unmarked') {
-            $this->sendWhatsAppNotification($record);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => "Attendance status updated to {$status}.",
-            'data' => $record,
-        ]);
-    }
 
     public function updateStatus(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'attendance_session_id' => 'required|exists:attendance_sessions,id',
+            'class_session_id' => 'required|exists:class_sessions,id',
             'student_id' => 'required|exists:students,id',
             'status' => 'required|in:present,absent,unmarked',
         ]);
@@ -527,7 +145,7 @@ class AttendanceController extends Controller
 
         $record = AttendanceRecord::updateOrCreate(
             [
-                'attendance_session_id' => $request->attendance_session_id,
+                'class_session_id' => $request->class_session_id,
                 'student_id' => $request->student_id,
             ],
             [
@@ -553,8 +171,8 @@ class AttendanceController extends Controller
     {
         $student = $record->student;
         $user = $student->user;
-        $session = $record->attendanceSession;
-        $subject = $session->classSession->subject->name;
+        $session = $record->classSession;
+        $subject = $session->subject->name;
         $status = strtoupper($record->status);
         
         $message = "Hello {$user->name}, your attendance for {$subject} has been marked as {$status}.";
@@ -569,9 +187,17 @@ class AttendanceController extends Controller
     protected function notifyStudentAttendance(AttendanceRecord $record)
     {
         try {
-            $student = $record->student->load('user');
-            $session = $record->attendanceSession->load('classSession.subject');
-            $subjectName = $session->classSession->subject->name;
+            // Ensure relationships are loaded
+            $record->load(['student.user', 'classSession.subject']);
+            
+            $student = $record->student;
+            $session = $record->classSession;
+
+            if (!$student || !$session || !$session->subject) {
+                return;
+            }
+
+            $subjectName = $session->subject->name;
             $status = strtoupper($record->status);
 
             $title = "Attendance Update: {$subjectName}";
@@ -612,19 +238,18 @@ class AttendanceController extends Controller
 
         $students = $query->get()->map(function ($student) use ($request) {
             $recordsQuery = $student->attendanceRecords()
-                ->whereHas('attendanceSession.classSession', function($q) use ($request) {
+                ->whereHas('classSession', function($q) use ($request) {
                     if ($request->has('subject_id')) {
                         $q->where('subject_id', $request->subject_id);
                     }
                 });
 
-            $totalSessions = AttendanceSession::whereHas('classSession', function($q) use ($student, $request) {
-                $q->where('batch_id', $student->batch_id)
+            $totalSessions = ClassSession::where('batch_id', $student->batch_id)
                   ->where('semester_id', $student->current_semester_id);
                 if ($request->has('subject_id')) {
-                    $q->where('subject_id', $request->subject_id);
+                    $totalSessions->where('subject_id', $request->subject_id);
                 }
-            })->count();
+            $totalSessions = $totalSessions->count();
 
             $presentCount = (clone $recordsQuery)->where('status', 'present')->count();
             
@@ -668,23 +293,21 @@ class AttendanceController extends Controller
              return response()->json(['success' => false, 'message' => 'Batch or Semester info missing.'], 422);
         }
 
-        $query = AttendanceSession::with(['classSession.subject', 'classSession.lecturer.user'])
-            ->whereHas('classSession', function($q) use ($batchId, $semesterId, $request) {
-                $q->where('batch_id', $batchId)
-                  ->where('semester_id', $semesterId);
-                
-                if ($request->has('subject_id')) {
-                    $q->where('subject_id', $request->subject_id);
-                }
+        $query = ClassSession::with(['subject', 'lecturer.user'])
+            ->where('batch_id', $batchId)
+            ->where('semester_id', $semesterId);
+        
+        if ($request->has('subject_id')) {
+            $query->where('subject_id', $request->subject_id);
+        }
 
-                if ($request->has('period')) {
-                    $q->where('period', $request->period);
-                }
+        if ($request->has('period')) {
+            $query->where('period', $request->period);
+        }
 
-                if ($request->has('date')) {
-                    $q->whereDate('date', $request->date);
-                }
-            });
+        if ($request->has('date')) {
+            $query->whereDate('date', $request->date);
+        }
 
         $sessions = $query->latest()->limit(5)->get();
 
@@ -694,14 +317,14 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function closeSession(int $sessionId): JsonResponse
+    public function closeSession(int $classSessionId): JsonResponse
     {
-        $session = AttendanceSession::findOrFail($sessionId);
+        $session = ClassSession::findOrFail($classSessionId);
         $session->update(['status' => 'closed']);
 
         return response()->json([
             'success' => true,
-            'message' => 'Attendance session closed.',
+            'message' => 'Lecture session closed.',
         ]);
     }
 
@@ -729,21 +352,18 @@ class AttendanceController extends Controller
         $subjects = \App\Models\Subject::where('semester_id', $semesterId)->get();
 
         // Optimized Analytics: Fetch all counts in fewer queries
-        $sessionCounts = AttendanceSession::whereHas('classSession', function($q) use ($batchId, $semesterId) {
-                $q->where('batch_id', $batchId)->where('semester_id', $semesterId);
-            })
-            ->join('class_sessions', 'attendance_sessions.class_session_id', '=', 'class_sessions.id')
-            ->selectRaw('class_sessions.subject_id, count(*) as total')
-            ->groupBy('class_sessions.subject_id')
+        $sessionCounts = ClassSession::where('batch_id', $batchId)
+            ->where('semester_id', $semesterId)
+            ->selectRaw('subject_id, count(*) as total')
+            ->groupBy('subject_id')
             ->pluck('total', 'subject_id');
 
         $attendanceCounts = AttendanceRecord::whereIn('student_id', $students->pluck('id'))
             ->where('attendance_records.status', 'present')
-            ->whereHas('attendanceSession.classSession', function($q) use ($batchId, $semesterId) {
+            ->whereHas('classSession', function($q) use ($batchId, $semesterId) {
                 $q->where('batch_id', $batchId)->where('semester_id', $semesterId);
             })
-            ->join('attendance_sessions', 'attendance_records.attendance_session_id', '=', 'attendance_sessions.id')
-            ->join('class_sessions', 'attendance_sessions.class_session_id', '=', 'class_sessions.id')
+            ->join('class_sessions', 'attendance_records.class_session_id', '=', 'class_sessions.id')
             ->selectRaw('attendance_records.student_id, class_sessions.subject_id, count(*) as present_count')
             ->groupBy('attendance_records.student_id', 'class_sessions.subject_id')
             ->get()
@@ -792,6 +412,115 @@ class AttendanceController extends Controller
             'data' => [
                 'students' => $data,
                 'subjects' => $subjects
+            ]
+        ]);
+    }
+    public function updateStatusDirect(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'subject_id' => 'required|exists:subjects,id',
+            'batch_id' => 'required|exists:batches,id',
+            'semester_id' => 'required|exists:semesters,id',
+            'date' => 'required|date',
+            'period' => 'required|integer',
+            'student_id' => 'required|exists:students,id',
+            'status' => 'required|in:present,absent,unmarked',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $user = $request->user();
+
+        // Security Check: Reps can only mark for today
+        if ($user->role === 'rep' && $request->date !== now()->toDateString()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Representatives can only mark attendance for the current day.'
+            ], 403);
+        }
+
+        // 2. Find or create ClassSession silently
+        $session = ClassSession::firstOrCreate([
+            'subject_id' => $request->subject_id,
+            'batch_id' => $request->batch_id,
+            'semester_id' => $request->semester_id,
+            'date' => $request->date,
+            'period' => $request->period,
+        ], [
+            'start_time' => '08:00', // Default
+            'end_time' => '10:00',
+            'status' => 'ongoing',
+        ]);
+
+        // 3. Mark the record
+        $record = AttendanceRecord::updateOrCreate(
+            [
+                'class_session_id' => $session->id,
+                'student_id' => $request->student_id,
+            ],
+            [
+                'marked_at' => now(),
+                'marked_by' => $user->id,
+                'method' => 'direct',
+                'status' => $request->status,
+            ]
+        );
+
+        if ($request->status !== 'unmarked') {
+            $this->notifyStudentAttendance($record);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Attendance updated directly.",
+            'data' => [
+                'record' => $record,
+                'session_id' => $session->id
+            ]
+        ]);
+    }
+
+    public function getDirectRecords(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'subject_id' => 'required|exists:subjects,id',
+            'batch_id' => 'required|exists:batches,id',
+            'date' => 'required|date',
+            'period' => 'required|integer',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        // Find session if exists
+        $session = ClassSession::where('subject_id', $request->subject_id)
+              ->where('batch_id', $request->batch_id)
+              ->where('date', $request->date)
+              ->where('period', $request->period)
+              ->first();
+
+        // Get all students in batch
+        $students = Student::with('user')
+            ->where('batch_id', $request->batch_id)
+            ->get();
+
+        $records = $session ? AttendanceRecord::where('class_session_id', $session->id)->get()->pluck('status', 'student_id') : collect();
+
+        $data = $students->map(function($student) use ($records) {
+            return [
+                'student' => $student,
+                'status' => $records[$student->id] ?? 'unmarked'
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'session' => $session,
+                'records' => $data
             ]
         ]);
     }

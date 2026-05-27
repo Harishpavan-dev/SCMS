@@ -47,7 +47,9 @@ export const RepAttendancePage = () => {
    // Mark Session Configuration
    const [selectedSubject, setSelectedSubject] = useState('');
    const [selectedPeriod, setSelectedPeriod] = useState(1);
+   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
    const [sessionId, setSessionId] = useState(null);
+   const [isLaunched, setIsLaunched] = useState(false);
 
    // History Filters
    const [historyDate, setHistoryDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -58,9 +60,6 @@ export const RepAttendancePage = () => {
    // Search
    const [search, setSearch] = useState('');
 
-   // Scanner State
-   const [scannerActive, setScannerActive] = useState(false);
-   const [lastScanned, setLastScanned] = useState(null);
 
    // Modals
    const [selectedStudentDetail, setSelectedStudentDetail] = useState(null);
@@ -72,10 +71,50 @@ export const RepAttendancePage = () => {
    }, [user]);
 
    useEffect(() => {
+    if (activeTab === 'mark' && selectedSubject && isLaunched) {
+        fetchDirectRecords();
+    }
+   }, [selectedSubject, selectedPeriod, selectedDate, isLaunched]);
+
+   useEffect(() => {
       if (activeTab === 'history' && historySubjectId) {
          fetchHistoryRecords();
       }
    }, [activeTab, historyDate, historySubjectId, historyPeriod]);
+
+   const fetchDirectRecords = async () => {
+      setLoading(true);
+      try {
+         const response = await api.get('/attendance/direct-records', {
+            params: {
+               subject_id: selectedSubject,
+               batch_id: user?.student?.batch_id,
+               date: selectedDate,
+               period: selectedPeriod
+            }
+         });
+         
+         const { session, records } = response.data.data;
+         setSessionId(session?.id || null);
+         
+         const recordMap = {};
+         records.forEach(item => {
+            recordMap[item.student.id] = item.status;
+         });
+         
+         setAttendanceRecords(recordMap);
+         
+         if (students.length === 0) {
+            setStudents(records.map(r => r.student));
+         }
+
+      } catch (error) {
+         console.error('Direct records fetch error:', error);
+         toast.error('Failed to sync records');
+      } finally {
+         setLoading(false);
+      }
+   };
 
    const fetchSubjects = async () => {
       if (subjects.length > 0 && user?.student?.current_semester_id === subjects[0].semester_id) return;
@@ -155,124 +194,13 @@ export const RepAttendancePage = () => {
       }
    };
 
-   useEffect(() => {
-      if (scannerActive && sessionId) {
-         const scanner = new Html5QrcodeScanner('rep-scanner', {
-            fps: 15,
-            qrbox: { width: 280, height: 280 },
-            aspectRatio: 1.0,
-         });
 
-         let currentScanned = null;
-
-         const onScanSuccess = async (decodedText) => {
-            if (currentScanned === decodedText) return;
-
-            // Pre-flight check: Prevent sending huge chunks of data or URLs to our backend
-            if (decodedText.length > 50 || decodedText.startsWith('http')) {
-               if (currentScanned !== 'INVALID') {
-                  toast.error('Invalid ID Card QR format');
-                  currentScanned = 'INVALID';
-                  setTimeout(() => { currentScanned = null; }, 3000); // Wait 3s before allowing another invalid scan Error beep
-               }
-               return;
-            }
-
-            currentScanned = decodedText;
-            
-            try {
-               const response = await api.post('/attendance/mark-scan', {
-                  attendance_session_id: sessionId,
-                  registration_number: decodedText
-               });
-
-               const scanInfo = response.data.data;
-               setLastScanned(decodedText);
-               toast.success(`Marked: ${scanInfo.student_name}`);
-
-               // Update local status so UI reflects present state
-               const student = students.find(s => s.registration_number === decodedText);
-               if (student) {
-                  setAttendanceRecords(prev => ({
-                     ...prev,
-                     [student.id]: 'present'
-                  }));
-               }
-
-               const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-               audio.play().catch(() => { });
-
-            } catch (error) {
-               toast.error(error.response?.data?.message || 'Scan failed');
-            }
-
-            setTimeout(() => {
-               if (currentScanned === decodedText) currentScanned = null;
-               setLastScanned(null);
-            }, 2000);
-         };
-
-         scanner.render(onScanSuccess, (e) => { });
-
-         return () => {
-            scanner.clear().then(() => {
-               const el = document.getElementById('rep-scanner');
-               if (el) el.innerHTML = '';
-            }).catch(err => {
-               console.error(err);
-               const el = document.getElementById('rep-scanner');
-               if (el) el.innerHTML = '';
-            });
-         };
-      }
-   }, [scannerActive, sessionId]); // Removed students from deps to avoid re-renders when state updates
-
-   const initializeSession = async () => {
+   const launchTerminal = () => {
       if (!selectedSubject) {
-         toast.error('Please select a subject');
+         toast.error('Pick a subject first');
          return;
       }
-      setLoading(true);
-      try {
-         const response = await api.post('/attendance/initialize', {
-            semester_id: user?.student?.current_semester_id,
-            batch_id: user?.student?.batch_id,
-            subject_id: selectedSubject,
-            date: format(new Date(), 'yyyy-MM-dd'),
-            period: selectedPeriod,
-            start_time: format(new Date(), 'HH:mm'),
-            end_time: format(new Date(new Date().setHours(new Date().getHours() + 2)), 'HH:mm')
-         });
-
-         const newSessionId = response.data.data.id;
-         setSessionId(newSessionId);
-
-         // Parallelize student list and existing records fetching
-         const promises = [api.get(`/attendance/sessions/${newSessionId}`)];
-
-         // Only fetch students if not already loaded
-         if (students.length === 0) {
-            promises.push(api.get('/students', { params: { batch_id: user.student.batch_id, per_page: 200 } }));
-         }
-
-         const results = await Promise.all(promises);
-         const recRes = results[0];
-         const stuRes = results[1];
-
-         if (stuRes) setStudents(stuRes.data.data.data || []);
-
-         const existing = {};
-         (recRes.data.data.records || []).forEach(r => {
-            existing[r.student_id] = r.status;
-         });
-         setAttendanceRecords(existing);
-         toast.success('Session Ready');
-      } catch (error) {
-         console.error(error);
-         toast.error('Failed to initialize session');
-      } finally {
-         setLoading(false);
-      }
+      setIsLaunched(true);
    };
 
    const updateStatus = async (studentId, status) => {
@@ -280,18 +208,28 @@ export const RepAttendancePage = () => {
          const currentStatus = attendanceRecords[studentId];
          const newStatus = currentStatus === status ? 'unmarked' : status;
 
+         // Optimistic update
          setAttendanceRecords(prev => ({
             ...prev,
             [studentId]: newStatus
          }));
 
-         await api.post('/attendance/update-status', {
-            attendance_session_id: sessionId,
+         const response = await api.post('/attendance/mark-direct', {
+            subject_id: selectedSubject,
+            batch_id: user?.student?.batch_id,
+            semester_id: user?.student?.current_semester_id,
+            date: selectedDate,
+            period: selectedPeriod,
             student_id: studentId,
             status: newStatus
          });
 
+         if (response.data.data.session_id) {
+            setSessionId(response.data.data.session_id);
+         }
+
       } catch (error) {
+         console.error(error);
          toast.error('Sync failed');
       }
    };
@@ -380,11 +318,11 @@ export const RepAttendancePage = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 pb-32 space-y-6 md:space-y-10 animate-in fade-in duration-500">
 
          {/* HEADER & TABS */}
-         {!sessionId && (
+         {!isLaunched && (
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-slate-100">
                <div className="space-y-1 text-center md:text-left">
                   <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">REP Terminal</h1>
-                  <p className="text-slate-500 text-sm font-medium">Manage batch attendance and sync reports effortlessly.</p>
+                  <p className="text-slate-500 text-sm font-medium">Direct marking mode: Select subject and mark status instantly.</p>
                </div>
 
                <div className="flex p-1.5 bg-slate-100/80 backdrop-blur-md rounded-2xl w-full md:w-fit self-center md:self-auto shadow-inner">
@@ -419,17 +357,31 @@ export const RepAttendancePage = () => {
 
          {activeTab === 'mark' && (
             <div className="space-y-6">
-               {!sessionId ? (
+               {!isLaunched ? (
                   <div className="max-w-2xl mx-auto space-y-8 py-12 md:py-20 text-center">
                      <div className="w-20 h-20 bg-indigo-50 rounded-[2rem] flex items-center justify-center mx-auto shadow-inner">
                         <ClipboardDocumentCheckIcon className="w-10 h-10 text-indigo-600" />
                      </div>
                      <div className="space-y-2">
-                        <h2 className="text-2xl font-black text-slate-900 uppercase">Initialize Protocol</h2>
-                        <p className="text-slate-500 text-sm max-w-sm mx-auto">Select the lecture details to boot the attendance marking terminal.</p>
+                        <h2 className="text-2xl font-black text-slate-900 uppercase">Class Entry</h2>
+                        <p className="text-slate-500 text-sm max-w-sm mx-auto">Access the student register for any subject and period.</p>
                      </div>
 
-                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                        <div className="space-y-1.5 text-left">
+                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Date</label>
+                           <input
+                                type="date"
+                                value={selectedDate}
+                                disabled={user?.role === 'rep'}
+                                onChange={(e) => setSelectedDate(e.target.value)}
+                                className={clsx(
+                                    "w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-600 transition-all",
+                                    user?.role === 'rep' && "opacity-60 cursor-not-allowed bg-slate-100"
+                                )}
+                           />
+                           {user?.role === 'rep' && <p className="text-[9px] font-bold text-slate-400 ml-1 mt-1">* Reps can only mark today's attendance</p>}
+                        </div>
                         <div className="space-y-1.5 text-left">
                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Subject</label>
                            <select
@@ -441,7 +393,7 @@ export const RepAttendancePage = () => {
                               {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                            </select>
                         </div>
-                        <div className="space-y-1.5 text-left">
+                        <div className="sm:col-span-2 lg:col-span-1 space-y-1.5 text-left">
                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Period</label>
                            <select
                               value={selectedPeriod}
@@ -454,11 +406,10 @@ export const RepAttendancePage = () => {
                      </div>
 
                      <button
-                        onClick={initializeSession}
-                        disabled={loading}
-                        className="w-full py-4.5 bg-indigo-600 text-white rounded-[2rem] font-bold text-sm uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50"
+                        onClick={launchTerminal}
+                        className="w-full py-4.5 bg-indigo-600 text-white rounded-[2rem] font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all"
                      >
-                        {loading ? 'Booting...' : 'Launch Terminal'}
+                        Open Register
                      </button>
                   </div>
                ) : (
@@ -466,26 +417,19 @@ export const RepAttendancePage = () => {
                      {/* Session Context Bar */}
                      <div className="bg-slate-900 p-6 md:p-8 rounded-[2.5rem] shadow-2xl text-white flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden">
                         <div className="flex items-center gap-4 md:gap-6 relative z-10 w-full md:w-auto">
-                           <button onClick={() => { setSessionId(null); setStudents([]); }} className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-colors">
+                           <button onClick={() => { setIsLaunched(false); setAttendanceRecords({}); }} className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-colors">
                               <ArrowLeftIcon className="w-5 h-5" />
                            </button>
                            <div className="min-w-0">
                               <h2 className="text-lg font-black truncate">{activeSubject?.name}</h2>
                               <div className="flex items-center gap-2 mt-0.5">
                                  <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">P{selectedPeriod} • Live Marking Segment</p>
+                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">P{selectedPeriod} • Direct Marking Mode</p>
                               </div>
                            </div>
                         </div>
 
                         <div className="flex items-center gap-3 w-full md:w-64 relative z-10">
-                           <button
-                              onClick={() => setScannerActive(!scannerActive)}
-                              className={clsx("p-2 rounded-xl transition-all shadow-sm", scannerActive ? "bg-red-500 text-white" : "bg-indigo-500 text-white hover:bg-indigo-400")}
-                              title={scannerActive ? "Stop Scanner" : "Start QR Scanner"}
-                           >
-                              {scannerActive ? <StopIcon className="w-5 h-5 flex-shrink-0" /> : <QrCodeIcon className="w-5 h-5 flex-shrink-0" />}
-                           </button>
                            <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-2 flex items-center gap-3 w-full">
                               <MagnifyingGlassIcon className="w-4 h-4 text-slate-500" />
                               <input
@@ -499,20 +443,6 @@ export const RepAttendancePage = () => {
                         </div>
                      </div>
 
-                     {/* QR Scanner Display Box */}
-                     {scannerActive && (
-                        <div className="bg-slate-900 rounded-[2.5rem] p-4 shadow-xl border-4 border-slate-800 overflow-hidden relative animate-in slide-in-from-top-4">
-                           <div id="rep-scanner" className="w-full max-w-md mx-auto bg-black rounded-[2rem] overflow-hidden"></div>
-
-                           <div className="text-center mt-4 mb-2">
-                              {lastScanned ? (
-                                 <p className="text-xl font-black text-emerald-400 uppercase tracking-widest">{lastScanned}</p>
-                              ) : (
-                                 <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] animate-pulse">Scanning Student IDs...</p>
-                              )}
-                           </div>
-                        </div>
-                     )}
 
                      {/* Desktop Table Layout */}
                      <div className="hidden md:block bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">

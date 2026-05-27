@@ -43,19 +43,17 @@ Route::middleware(\App\Http\Middleware\JWTAuth::class)->group(function () {
         Route::get('/semesters/{id}/subjects', [SubjectController::class, 'getBySemester']);
         Route::get('/students', [StudentController::class, 'index']);
         Route::get('/students/{id}', [StudentController::class, 'show']);
-        Route::post('/attendance/initialize', [AttendanceController::class, 'initializeSession']);
-        Route::post('/attendance/toggle', [AttendanceController::class, 'toggleStatus']);
         Route::post('/attendance/update-status', [AttendanceController::class, 'updateStatus']);
         Route::get('/attendance/sessions/{id}', [AttendanceController::class, 'getSessionRecords']);
         Route::get('/attendance/rep-analytics', [AttendanceController::class, 'getRepAnalytics']);
-        Route::post('/attendance/mark-scan', [AttendanceController::class, 'markByScanner']);
+        Route::get('/attendance/direct-records', [AttendanceController::class, 'getDirectRecords']);
+        Route::post('/attendance/mark-direct', [AttendanceController::class, 'updateStatusDirect']);
         Route::get('/subjects', [SubjectController::class, 'index']);
     });
 
     // --- ANALYTICS & REPORTS ---
     Route::middleware(\App\Http\Middleware\RoleMiddleware::class.':admin,lecturer,hod')->group(function () {
         Route::get('/lecturers', [ResourceController::class, 'lecturerIndex']);
-        Route::post('/attendance/generate-qr', [AttendanceController::class, 'generateQR']);
         Route::get('/attendance/hod-analytics', [AttendanceController::class, 'getHodAnalytics']);
         Route::get('/attendance/report', [AttendanceController::class, 'getReport']);
         Route::post('/attendance/sessions/{id}/close', [AttendanceController::class, 'closeSession']);
@@ -113,7 +111,6 @@ Route::middleware(\App\Http\Middleware\JWTAuth::class)->group(function () {
 
     // Student & Rep (Personal stuff)
     Route::middleware(\App\Http\Middleware\RoleMiddleware::class.':student,rep,lecturer,admin,hod')->group(function () {
-        Route::post('/attendance/mark', [AttendanceController::class, 'markAttendance']);
         Route::get('/students/{id}/results', [StudentController::class, 'getResults']);
         Route::get('/students/{id}/gpa', [ResultController::class, 'studentGPA']);
     });
