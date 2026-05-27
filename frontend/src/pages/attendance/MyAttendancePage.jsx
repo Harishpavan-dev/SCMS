@@ -128,6 +128,39 @@ export const MyAttendancePage = () => {
     }
   };
 
+  const handleExportExcel = () => {
+    try {
+      const allRecords = records?.data || [];
+      if (allRecords.length === 0) {
+        toast.error('No records to export');
+        return;
+      }
+
+      const csvRows = [
+        ['Date', 'Subject', 'Time', 'Status'], // Header
+        ...allRecords.map(r => [
+          format(new Date(r.marked_at), 'yyyy-MM-dd'),
+          `"${r.class_session?.subject?.name || 'N/A'}"`, // Quotes to handle commas in subject names
+          format(new Date(r.marked_at), 'hh:mm a'),
+          r.status.toUpperCase()
+        ])
+      ];
+
+      const csvContent = csvRows.map(e => e.join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Attendance_Records_${user?.name}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('Excel file exported');
+    } catch (error) {
+      toast.error('Excel export failed');
+    }
+  };
+
   const consistencyData = useMemo(() => {
     if (!records?.data?.length) return [];
     const days = [];
@@ -185,19 +218,26 @@ export const MyAttendancePage = () => {
           </div>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-center gap-4">
-           <div className="px-6 py-3 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col items-center sm:items-end">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Attendance</span>
-              <span className={`text-2xl font-black ${getStatusColor(overall_percentage)}`}>{overall_percentage}%</span>
-           </div>
-           <button 
-             onClick={handleDownloadPDF}
-             className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all text-xs font-bold uppercase tracking-wider shadow-md active:scale-95 transition-all outline-none"
-           >
-             <ArrowDownTrayIcon className="w-4 h-4" />
-             Download PDF Report
-           </button>
-        </div>
+         <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            <div className="px-5 py-2.5 bg-slate-50 rounded-xl border border-slate-100 flex flex-col items-center sm:items-end shrink-0 hidden md:flex">
+               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Total Attendance</span>
+               <span className={`text-xl font-black ${getStatusColor(overall_percentage)}`}>{overall_percentage}%</span>
+            </div>
+            <button 
+              onClick={handleDownloadPDF}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-all text-xs font-bold uppercase tracking-wider active:scale-95 outline-none border border-indigo-100"
+            >
+              <DocumentTextIcon className="w-4 h-4" />
+              PDF
+            </button>
+            <button 
+              onClick={handleExportExcel}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all text-xs font-bold uppercase tracking-wider shadow-md active:scale-95 outline-none"
+            >
+              <ArrowDownTrayIcon className="w-4 h-4" />
+              Export Excel
+            </button>
+         </div>
       </header>
 
       {/* 02. CLEAN NAVIGATION */}
