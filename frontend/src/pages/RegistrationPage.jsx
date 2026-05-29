@@ -20,6 +20,9 @@ export const RegistrationPage = () => {
     password: '',
     phone: '',
     nic_number: '',
+    registration_year: '2025',
+    registration_suffix: '',
+    registration_number: 'JAF/IT/2025/F/',
     date_of_birth: '',
     gender: 'male',
     address: '',
@@ -54,10 +57,22 @@ export const RegistrationPage = () => {
   }, []);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    
+    if (name === 'registration_year' || name === 'registration_suffix') {
+      const updatedData = {
+        ...formData,
+        [name]: value.replace(/[^0-9]/g, '')
+      };
+      // Reconstruct full registration number
+      updatedData.registration_number = `JAF/IT/${updatedData.registration_year}/F/${updatedData.registration_suffix}`;
+      setFormData(updatedData);
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
   };
 
   const handleFileChange = (e) => {
@@ -230,6 +245,39 @@ export const RegistrationPage = () => {
                   type="date" name="date_of_birth" required value={formData.date_of_birth} onChange={handleChange}
                   className="input-field"
                 />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="input-label">Registration Number</label>
+                <div className="flex group focus-within:ring-2 focus-within:ring-indigo-500/20 rounded-2xl transition-all overflow-hidden border border-slate-200">
+                  <div className="shrink-0 inline-flex items-center px-4 bg-slate-50 text-slate-500 font-bold text-xs tracking-widest border-r border-slate-200">
+                    JAF/IT/
+                  </div>
+                  <input 
+                    type="text" 
+                    name="registration_year"
+                    required 
+                    placeholder="2025"
+                    maxLength={4}
+                    className="w-20 px-3 py-3 text-center font-black text-indigo-600 focus:outline-none bg-white"
+                    value={formData.registration_year}
+                    onChange={handleChange}
+                  />
+                  <div className="shrink-0 inline-flex items-center px-3 bg-slate-50 text-slate-500 font-bold text-xs tracking-widest border-x border-slate-200">
+                    /F/
+                  </div>
+                  <input 
+                    type="text" 
+                    name="registration_suffix"
+                    required 
+                    placeholder="00"
+                    maxLength={3}
+                    className="flex-1 px-4 py-3 font-black tracking-[0.2em] text-indigo-600 focus:outline-none bg-white" 
+                    value={formData.registration_suffix}
+                    onChange={handleChange}
+                  />
+                </div>
+                <p className="mt-2 text-[10px] font-medium text-slate-400">Specify the academic year and your unique registration suffix.</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

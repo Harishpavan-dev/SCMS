@@ -100,6 +100,7 @@ class StudentController extends Controller
             'address' => 'nullable|string',
             'batch_id' => 'required|exists:batches,id',
             'current_semester_id' => 'required|exists:semesters,id',
+            'registration_number' => 'required|string|unique:students,registration_number',
             'avatar' => 'nullable|image|max:2048',
         ]);
 
@@ -112,11 +113,8 @@ class StudentController extends Controller
 
         DB::beginTransaction();
         try {
-            // Generate registration number
-            $batch = Batch::findOrFail($request->batch_id);
-            $year = $batch->year;
-            $count = Student::where('batch_id', $request->batch_id)->count() + 1;
-            $regNumber = sprintf('ATI/HNDIT/%d/%03d', $year, $count);
+            // Use provided registration number
+            $regNumber = $request->registration_number;
 
             // Generate password
             $password = Str::random(8);
@@ -194,6 +192,7 @@ class StudentController extends Controller
             'address' => 'nullable|string',
             'batch_id' => 'required|exists:batches,id',
             'current_semester_id' => 'required|exists:semesters,id',
+            'registration_number' => 'required|string|unique:students,registration_number',
             'avatar' => 'nullable|image|max:2048',
         ]);
 
@@ -203,10 +202,7 @@ class StudentController extends Controller
 
         DB::beginTransaction();
         try {
-            $batch = Batch::findOrFail($request->batch_id);
-            $year = $batch->year;
-            $count = Student::where('batch_id', $request->batch_id)->count() + 1;
-            $regNumber = sprintf('ATI/HNDIT/%d/%03d', $year, $count);
+            $regNumber = $request->registration_number;
 
             $avatarPath = null;
             if ($request->hasFile('avatar')) {
