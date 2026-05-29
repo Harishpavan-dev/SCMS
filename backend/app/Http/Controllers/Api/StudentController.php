@@ -254,14 +254,11 @@ class StudentController extends Controller
             return response()->json(['success' => false, 'message' => 'Student is not pending.'], 400);
         }
 
-        $password = Str::random(8);
-
         DB::beginTransaction();
         try {
             $student->update(['status' => 'active']);
             $student->user()->update([
                 'is_active' => true,
-                'password' => Hash::make($password)
             ]);
 
             DB::commit();
@@ -271,7 +268,6 @@ class StudentController extends Controller
                 'message' => 'Student approved successfully.',
                 'data' => [
                     'student' => $student->load('user'),
-                    'temporary_password' => $password
                 ]
             ]);
         } catch (\Exception $e) {

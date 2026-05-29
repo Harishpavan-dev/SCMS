@@ -288,6 +288,10 @@ export const RepAttendancePage = () => {
    };
 
     const updateStatus = async (identifier, status, isReg = false) => {
+       // Find current status to enable toggling
+       const currentStatus = isReg ? null : attendanceRecords[identifier];
+       const finalStatus = currentStatus === status ? 'unmarked' : status;
+
        try {
           const payload = {
              subject_id: selectedSubject,
@@ -295,7 +299,7 @@ export const RepAttendancePage = () => {
              semester_id: user?.student?.current_semester_id,
              date: selectedDate,
              period: selectedPeriod,
-             status: status
+             status: finalStatus
           };
  
           if (isReg) {
@@ -303,7 +307,7 @@ export const RepAttendancePage = () => {
           } else {
              payload.student_id = identifier;
              // Optimistic update for UI if we have the student ID
-             setAttendanceRecords(prev => ({ ...prev, [identifier]: status }));
+             setAttendanceRecords(prev => ({ ...prev, [identifier]: finalStatus }));
           }
  
           const response = await api.post('/attendance/mark-direct', payload);
@@ -312,8 +316,6 @@ export const RepAttendancePage = () => {
              setSessionId(response.data.data.session_id);
           }
           
-          // If we used a registration number, we might want to refresh records 
-          // because we don't know which student ID it mapped to locally
           if (isReg) {
              fetchDirectRecords();
           }
