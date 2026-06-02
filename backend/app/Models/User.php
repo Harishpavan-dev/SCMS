@@ -55,6 +55,21 @@ class User extends Authenticatable
         return $this->hasMany(FcmToken::class);
     }
 
+    // Accessors
+    public function getAvatarAttribute($value)
+    {
+        if (!$value) {
+            return null;
+        }
+        // If full URL, extract the /storage/... path
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            $parsed = parse_url($value, PHP_URL_PATH);
+            return $parsed ?: $value;
+        }
+        // Relative path like "avatars/file.jpg" — prepend /storage/
+        return '/storage/' . $value;
+    }
+
     // Helpers
     public function isAdmin(): bool
     {

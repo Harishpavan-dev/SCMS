@@ -777,7 +777,7 @@ export const RepAttendancePage = () => {
                         <div className="w-24 h-24 rounded-[1.8rem] overflow-hidden bg-slate-100 border-2 border-slate-50 flex items-center justify-center">
                            {selectedStudentDetail.user.avatar ? (
                               <img
-                                 src={`${import.meta.env.VITE_STORAGE_URL || 'http://localhost:8000/storage'}/${selectedStudentDetail.user.avatar}`}
+                                 src={selectedStudentDetail.user.avatar}
                                  alt={selectedStudentDetail.user.name}
                                  className="w-full h-full object-cover"
                                  onError={(e) => {

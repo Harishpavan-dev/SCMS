@@ -328,7 +328,7 @@ export const StudentsPage = () => {
                <div className="flex items-center gap-6">
                   {selectedStudent.user?.avatar ? (
                     <img 
-                      src={`${import.meta.env.VITE_API_URL}/storage/${selectedStudent.user.avatar}`} 
+                      src={selectedStudent.user.avatar} 
                       className="w-24 h-24 rounded-3xl object-cover border-4 border-white shadow-xl"
                       alt={editForm.name}
                     />

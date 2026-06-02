@@ -22,9 +22,7 @@ export const StudentIdCard = () => {
   // Data mapping with fallbacks
   const fullName = user?.name || 'Student Name';
   const regNumber = student?.registration_number || 'REG-PENDING';
-  const _originalAvatarUrl = user?.avatar || null;
-  // Convert absolute Backend URL to a relative path so it routes through Vite's /storage proxy avoiding CORS blocks
-  const avatarUrl = _originalAvatarUrl ? _originalAvatarUrl.replace(/^(https?:\/\/[^\/]+)/i, '') : null;
+  const avatarUrl = user?.avatar || null;
   
   const batchName = student?.batch?.name || 'Batch N/A';
   const semesterName = student?.current_semester?.name || student?.currentSemester?.name || 'Semester N/A';
