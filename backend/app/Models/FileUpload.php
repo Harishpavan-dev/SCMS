@@ -11,7 +11,18 @@ class FileUpload extends Model
         'title', 'original_name', 'file_path', 'file_size', 'mime_type',
     ];
 
-    public function uploader() { return $this->belongsTo(User::class, 'uploaded_by'); }
-    public function subject() { return $this->belongsTo(Subject::class); }
-    public function semester() { return $this->belongsTo(Semester::class); }
+    public function uploader()
+    {
+        return $this->belongsTo(User::class, 'uploaded_by');
+    }
+
+    public function subject()
+    {
+        return $this->belongsTo(Subject::class);
+    }
+
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class);
+    }
 }

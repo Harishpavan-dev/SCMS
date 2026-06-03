@@ -2,16 +2,19 @@
 
 namespace App\Services;
 
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
 use App\Models\User;
 use Exception;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
 class JWTService
 {
     private string $secret;
+
     private int $ttl;
+
     private int $refreshTtl;
+
     private string $algo;
 
     public function __construct()
@@ -64,7 +67,7 @@ class JWTService
     {
         $payload = $this->parseToken($token);
 
-        if (!$payload || !isset($payload->sub)) {
+        if (! $payload || ! isset($payload->sub)) {
             return null;
         }
 
@@ -80,16 +83,16 @@ class JWTService
     {
         $payload = $this->parseToken($token);
 
-        if (!$payload || !isset($payload->sub)) {
+        if (! $payload || ! isset($payload->sub)) {
             return null;
         }
 
-        if (!isset($payload->type) || $payload->type !== 'refresh') {
+        if (! isset($payload->type) || $payload->type !== 'refresh') {
             return null;
         }
 
         $user = User::find($payload->sub);
-        if (!$user) {
+        if (! $user) {
             return null;
         }
 

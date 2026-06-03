@@ -33,7 +33,7 @@ import {
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
-import { format, subDays, startOfWeek } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { Link } from 'react-router-dom';
 
 // QR CSS Overrides
@@ -68,7 +68,6 @@ const qrStyles = `
 export const RepAttendancePage = () => {
    const { user } = useAuthStore();
    
-   if (!user) return null; // Prevent crash if user state is not ready
    const [activeTab, setActiveTab] = useState('mark'); // mark or history
 
    const [subjects, setSubjects] = useState([]);
@@ -80,7 +79,7 @@ export const RepAttendancePage = () => {
    const [selectedSubject, setSelectedSubject] = useState('');
    const [selectedPeriod, setSelectedPeriod] = useState(1);
    const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-   const [sessionId, setSessionId] = useState(null);
+
    const [isLaunched, setIsLaunched] = useState(false);
 
    // History Filters
@@ -130,7 +129,7 @@ export const RepAttendancePage = () => {
 
             scanner = new Html5QrcodeScanner('rep-scanner', { 
                fps: 15, 
-               qrbox: (viewfinderWidth, viewfinderHeight) => {
+               qrbox: (viewfinderWidth) => {
                   return { width: viewfinderWidth * 0.7, height: viewfinderWidth * 0.7 };
                },
                aspectRatio: 1.0,
@@ -151,10 +150,10 @@ export const RepAttendancePage = () => {
                   toast.success(`Marked: ${decodedText}`);
                   const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
                   audio.play().catch(() => {});
-               } catch (e) {
+               } catch {
                   toast.error(`Scan Error: ${decodedText}`);
                }
-            }, (err) => {});
+             }, () => {});
          }, 100);
 
          return () => {
@@ -178,8 +177,8 @@ export const RepAttendancePage = () => {
             }
          });
          
-         const { session, records } = response.data.data;
-         setSessionId(session?.id || null);
+         const { records } = response.data.data;
+
          
          const recordMap = {};
          records.forEach(item => {
@@ -310,11 +309,9 @@ export const RepAttendancePage = () => {
              setAttendanceRecords(prev => ({ ...prev, [identifier]: finalStatus }));
           }
  
-          const response = await api.post('/attendance/mark-direct', payload);
+          await api.post('/attendance/mark-direct', payload);
  
-          if (response.data.data.session_id) {
-             setSessionId(response.data.data.session_id);
-          }
+
           
           if (isReg) {
              fetchDirectRecords();
@@ -393,9 +390,9 @@ export const RepAttendancePage = () => {
       return encodeURIComponent(msg);
    };
 
-   const handleShareWhatsApp = () => {
-      window.open(`https://wa.me/?text=${generateWhatsAppMessage()}`, '_blank');
-   };
+
+
+   if (!user) return null;
 
    if (user?.role !== 'rep' && user?.role !== 'admin' && user?.role !== 'hod') {
       return (

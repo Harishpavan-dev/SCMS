@@ -12,7 +12,7 @@ import toast from 'react-hot-toast';
 import clsx from 'clsx';
 
 export const HodDashboard = () => {
-  const { user } = useAuthStore();
+  useAuthStore();
   const [analytics, setAnalytics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [batches, setBatches] = useState([]);
@@ -27,6 +27,7 @@ export const HodDashboard = () => {
 
   const [search, setSearch] = useState('');
 
+   
   useEffect(() => {
     fetchResources();
     fetchAnalytics();
@@ -42,7 +43,7 @@ export const HodDashboard = () => {
       setBatches(b.data.data || []);
       setSemesters(sem.data.data || []);
       setSubjects(sub.data.data || []);
-    } catch (error) {
+    } catch {
       console.error('Failed to load metadata');
     }
   };
@@ -52,7 +53,7 @@ export const HodDashboard = () => {
     try {
       const response = await api.get('/attendance/hod-analytics', { params: filters });
       setAnalytics(response.data.data || []);
-    } catch (error) {
+    } catch {
       toast.error('Failed to load HOD analytics');
     } finally {
       setLoading(false);

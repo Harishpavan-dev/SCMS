@@ -21,6 +21,7 @@ export const StudentDashboard = () => {
   const [subjects, setSubjects] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState('');
 
+   
   useEffect(() => {
     fetchAttendance();
     fetchSubjects();
@@ -32,7 +33,7 @@ export const StudentDashboard = () => {
         const response = await api.get(`/semesters/${user.student.current_semester_id}/subjects`);
         setSubjects(response.data.data.map(s => s.subject || s) || []);
       }
-    } catch (error) {
+    } catch {
       console.error('Failed to load subjects');
     }
   };
@@ -45,7 +46,7 @@ export const StudentDashboard = () => {
       });
       setAttendance(response.data.data.records.data || []);
       setSummary(response.data.data);
-    } catch (error) {
+    } catch {
       toast.error('Failed to load attendance records');
     } finally {
       setLoading(false);

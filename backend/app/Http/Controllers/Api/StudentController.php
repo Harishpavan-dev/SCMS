@@ -3,14 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\{User, Student, Batch, Semester};
+use App\Models\AttendanceRecord;
+use App\Models\Result;
+use App\Models\Semester;
+use App\Models\Student;
+use App\Models\User;
+use chillerlan\QRCode\QRCode;
+use chillerlan\QRCode\QROptions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use chillerlan\QRCode\{QRCode, QROptions};
 
 class StudentController extends Controller
 {
@@ -33,11 +38,11 @@ class StudentController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('students.registration_number', 'like', "%{$search}%")
-                  ->orWhere('students.nic_number', 'like', "%{$search}%")
-                  ->orWhereHas('user', function ($q2) use ($search) {
-                      $q2->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
-                  });
+                    ->orWhere('students.nic_number', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($q2) use ($search) {
+                        $q2->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -55,36 +60,36 @@ class StudentController extends Controller
     {
         $student = Student::findOrFail($id);
         $user = $student->user;
-        
-        if (!in_array($user->role, ['student', 'rep'])) {
+
+        if (! in_array($user->role, ['student', 'rep'])) {
             return response()->json(['success' => false, 'message' => 'User is not a student.'], 400);
         }
 
         if ($user->role === 'student') {
             // Count current reps in this batch
             $repCount = Student::where('batch_id', $student->batch_id)
-                ->whereHas('user', function($q) {
+                ->whereHas('user', function ($q) {
                     $q->where('role', 'rep');
                 })->count();
 
             if ($repCount >= 2) {
                 return response()->json([
-                    'success' => false, 
-                    'message' => 'Maximum 2 representatives allowed per batch.'
+                    'success' => false,
+                    'message' => 'Maximum 2 representatives allowed per batch.',
                 ], 400);
             }
 
             $user->update(['role' => 'rep']);
-            $msg = "Student promoted to Representative.";
+            $msg = 'Student promoted to Representative.';
         } else {
             $user->update(['role' => 'student']);
-            $msg = "Representative role removed.";
+            $msg = 'Representative role removed.';
         }
 
         return response()->json([
             'success' => true,
             'message' => $msg,
-            'data' => $student->load('user')
+            'data' => $student->load('user'),
         ]);
     }
 
@@ -172,10 +177,7 @@ class StudentController extends Controller
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to register student: ' . $e->getMessage(),
-            ], 500);
+            abort(500, 'Failed to register student: '.$e->getMessage());
         }
     }
 
@@ -242,14 +244,14 @@ class StudentController extends Controller
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Registration failed.'], 500);
+            abort(500, 'Registration failed.');
         }
     }
 
     public function approve(int $id): JsonResponse
     {
         $student = Student::findOrFail($id);
-        
+
         if ($student->status !== 'pending') {
             return response()->json(['success' => false, 'message' => 'Student is not pending.'], 400);
         }
@@ -268,11 +270,11 @@ class StudentController extends Controller
                 'message' => 'Student approved successfully.',
                 'data' => [
                     'student' => $student->load('user'),
-                ]
+                ],
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Approval failed.'], 500);
+            abort(500, 'Approval failed.');
         }
     }
 
@@ -292,9 +294,9 @@ class StudentController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|email|unique:users,email,' . $student->user_id,
+            'email' => 'sometimes|email|unique:users,email,'.$student->user_id,
             'phone' => 'sometimes|string|max:20',
-            'nic_number' => 'sometimes|string|max:20|unique:students,nic_number,' . $id,
+            'nic_number' => 'sometimes|string|max:20|unique:students,nic_number,'.$id,
             'date_of_birth' => 'sometimes|date|before:today',
             'gender' => 'sometimes|in:male,female,other',
             'address' => 'nullable|string',
@@ -314,7 +316,7 @@ class StudentController extends Controller
         try {
             // Update user
             $userFields = $request->only(['name', 'email', 'phone']);
-            if (!empty($userFields)) {
+            if (! empty($userFields)) {
                 $student->user()->update($userFields);
             }
 
@@ -323,7 +325,7 @@ class StudentController extends Controller
                 'nic_number', 'date_of_birth', 'gender', 'address',
                 'batch_id', 'current_semester_id', 'status',
             ]);
-            if (!empty($studentFields)) {
+            if (! empty($studentFields)) {
                 $student->update($studentFields);
             }
 
@@ -338,10 +340,7 @@ class StudentController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update student: ' . $e->getMessage(),
-            ], 500);
+            abort(500, 'Failed to update student: '.$e->getMessage());
         }
     }
 
@@ -381,7 +380,7 @@ class StudentController extends Controller
     {
         $student = Student::findOrFail($id);
 
-        $query = \App\Models\AttendanceRecord::where('student_id', $student->id)
+        $query = AttendanceRecord::where('student_id', $student->id)
             ->with(['attendanceSession.classSession.subject']);
 
         if ($request->has('subject_id')) {
@@ -401,8 +400,8 @@ class StudentController extends Controller
         $records = $query->latest('marked_at')->paginate(20);
 
         // Calculate summary
-        $total = \App\Models\AttendanceRecord::where('student_id', $student->id)->count();
-        $present = \App\Models\AttendanceRecord::where('student_id', $student->id)
+        $total = AttendanceRecord::where('student_id', $student->id)->count();
+        $present = AttendanceRecord::where('student_id', $student->id)
             ->where('status', 'present')->count();
 
         return response()->json([
@@ -423,7 +422,7 @@ class StudentController extends Controller
     {
         $student = Student::findOrFail($id);
 
-        $results = \App\Models\Result::where('student_id', $student->id)
+        $results = Result::where('student_id', $student->id)
             ->where('is_published', true)
             ->with(['subject', 'semester'])
             ->orderBy('semester_id')
@@ -445,7 +444,7 @@ class StudentController extends Controller
                 : 0;
         }
 
-        $cumulativeGPA = \App\Models\Result::where('student_id', $student->id)
+        $cumulativeGPA = Result::where('student_id', $student->id)
             ->where('is_published', true)
             ->whereNotNull('grade_point')
             ->avg('grade_point');
@@ -503,7 +502,7 @@ class StudentController extends Controller
     public function upgradeAcademicCycle(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'password' => 'required'
+            'password' => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -511,17 +510,17 @@ class StudentController extends Controller
         }
 
         // Verify Admin Password
-        if (!Hash::check($request->password, $request->user()->password)) {
+        if (! Hash::check($request->password, $request->user()->password)) {
             return response()->json(['success' => false, 'message' => 'Invalid administrative credentials.'], 403);
         }
 
         DB::beginTransaction();
         try {
             $students = Student::all();
-            
+
             foreach ($students as $student) {
                 $currentSemNumber = $student->currentSemester->number ?? 1;
-                
+
                 if ($currentSemNumber < 4) {
                     $nextSem = Semester::where('number', $currentSemNumber + 1)->first();
                     if ($nextSem) {
@@ -534,13 +533,14 @@ class StudentController extends Controller
             }
 
             DB::commit();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Academic cycle upgraded successfully for all batches.',
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Migration failed.'], 500);
+            abort(500, 'Migration failed.');
         }
     }
 }

@@ -57,15 +57,13 @@ export const MyAttendancePage = () => {
     summary, 
     overall_percentage, 
     total_present, 
-    total_sessions, 
-    total_absent 
+    total_sessions
   } = data || { 
     records: { data: [] }, 
     summary: [], 
     overall_percentage: 0, 
     total_present: 0, 
-    total_sessions: 0, 
-    total_absent: 0 
+    total_sessions: 0
   };
 
   const getStatusColor = (percent) => {

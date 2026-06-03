@@ -11,9 +11,9 @@ use App\Models\Result;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
@@ -23,10 +23,10 @@ class DashboardController extends Controller
 
         $data = match ($user->role) {
             'admin', 'hod' => $this->adminDashboard($user),
-            'lecturer'     => $this->lecturerDashboard($user),
-            'rep'          => $this->repDashboard($user),
-            'student'      => $this->studentDashboard($user),
-            default        => [],
+            'lecturer' => $this->lecturerDashboard($user),
+            'rep' => $this->repDashboard($user),
+            'student' => $this->studentDashboard($user),
+            default => [],
         };
 
         return response()->json(['success' => true, 'data' => $data]);
@@ -40,34 +40,34 @@ class DashboardController extends Controller
         $result = [];
 
         for ($i = 6; $i >= 0; $i--) {
-            $date  = Carbon::today()->subDays($i);
+            $date = Carbon::today()->subDays($i);
             $label = $date->format('D'); // Mon, Tue …
 
             if ($studentId) {
-                $total   = AttendanceRecord::where('student_id', $studentId)
-                               ->whereDate('marked_at', $date)->count();
+                $total = AttendanceRecord::where('student_id', $studentId)
+                    ->whereDate('marked_at', $date)->count();
                 $present = AttendanceRecord::where('student_id', $studentId)
-                               ->where('status', 'present')
-                               ->whereDate('marked_at', $date)->count();
+                    ->where('status', 'present')
+                    ->whereDate('marked_at', $date)->count();
 
             } elseif ($batchId) {
                 $total = ClassSession::where('batch_id', $batchId)
                     ->whereDate('date', $date)
                     ->count();
-                
+
                 $present = AttendanceRecord::whereHas(
                     'classSession',
                     fn ($q) => $q->where('batch_id', $batchId)->whereDate('date', $date)
                 )->where('status', 'present')->count();
 
             } else {
-                $total   = AttendanceRecord::whereDate('marked_at', $date)->count();
+                $total = AttendanceRecord::whereDate('marked_at', $date)->count();
                 $present = AttendanceRecord::whereDate('marked_at', $date)
-                               ->where('status', 'present')->count();
+                    ->where('status', 'present')->count();
             }
 
             $result[] = [
-                'day'        => $label,
+                'day' => $label,
                 'attendance' => $total > 0 ? (int) round(($present / $total) * 100) : 0,
             ];
         }
@@ -85,7 +85,7 @@ class DashboardController extends Controller
             ->take($limit)
             ->get()
             ->map(fn ($n) => [
-                'id'   => $n->id,
+                'id' => $n->id,
                 'type' => $n->type ?? 'info',
                 'text' => $n->title ?? $n->message ?? '',
                 'time' => $n->created_at->diffForHumans(),
@@ -99,31 +99,31 @@ class DashboardController extends Controller
     // ─────────────────────────────────────────────────────────────────────────────
     private function adminDashboard(User $user): array
     {
-        $todayTotal   = AttendanceRecord::whereDate('marked_at', today())->count();
+        $todayTotal = AttendanceRecord::whereDate('marked_at', today())->count();
         $todayPresent = AttendanceRecord::whereDate('marked_at', today())
-                            ->where('status', 'present')->count();
-        $todayPct     = $todayTotal > 0 ? (int) round(($todayPresent / $todayTotal) * 100) : 0;
+            ->where('status', 'present')->count();
+        $todayPct = $todayTotal > 0 ? (int) round(($todayPresent / $todayTotal) * 100) : 0;
 
         $recentStudents = Student::with('user', 'batch')
             ->latest()->take(5)->get()
             ->map(fn ($s) => [
-                'id'                  => $s->id,
+                'id' => $s->id,
                 'registration_number' => $s->registration_number,
-                'user'                => ['name' => $s->user?->name ?? 'Unknown'],
-                'batch'               => ['name' => $s->batch?->name ?? '—'],
+                'user' => ['name' => $s->user?->name ?? 'Unknown'],
+                'batch' => ['name' => $s->batch?->name ?? '—'],
             ]);
 
         return [
-            'total_students'              => Student::where('status', 'active')->count(),
-            'total_lecturers'             => Lecturer::count(),
-            'total_subjects'              => Subject::count(),
-            'attendance_today'            => $todayTotal,
+            'total_students' => Student::where('status', 'active')->count(),
+            'total_lecturers' => Lecturer::count(),
+            'total_subjects' => Subject::count(),
+            'attendance_today' => $todayTotal,
             'attendance_today_percentage' => $todayPct,
-            'recent_students'             => $recentStudents,
-            'weekly_attendance'           => $this->weeklyAttendance(),
-            'notifications'               => $this->recentNotifications($user->id),
-            'unread_notifications'        => Notification::where('user_id', $user->id)
-                                                ->where('is_read', false)->count(),
+            'recent_students' => $recentStudents,
+            'weekly_attendance' => $this->weeklyAttendance(),
+            'notifications' => $this->recentNotifications($user->id),
+            'unread_notifications' => Notification::where('user_id', $user->id)
+                ->where('is_read', false)->count(),
         ];
     }
 
@@ -133,11 +133,13 @@ class DashboardController extends Controller
     private function repDashboard(User $user): array
     {
         $student = $user->student;
-        if (!$student) return $this->emptyRepData($user);
+        if (! $student) {
+            return $this->emptyRepData($user);
+        }
 
-        $batchId           = $student->batch_id;
+        $batchId = $student->batch_id;
         $batchStudentCount = Student::where('batch_id', $batchId)
-                                ->where('status', 'active')->count();
+            ->where('status', 'active')->count();
 
         // Today's sessions (lectures) for this batch
         $todayLectures = ClassSession::where('batch_id', $batchId)
@@ -147,12 +149,13 @@ class DashboardController extends Controller
 
         $todayStats = $todayLectures->map(function ($session) use ($batchStudentCount) {
             $presentCount = $session->records->where('status', 'present')->count();
+
             return [
-                'subject'    => $session->subject?->name ?? '—',
-                'code'       => $session->subject?->code ?? '—',
+                'subject' => $session->subject?->name ?? '—',
+                'code' => $session->subject?->code ?? '—',
                 'subject_id' => $session->subject?->id,
-                'present'    => $presentCount,
-                'total'      => $batchStudentCount,
+                'present' => $presentCount,
+                'total' => $batchStudentCount,
             ];
         });
 
@@ -163,11 +166,12 @@ class DashboardController extends Controller
                 $totalPresent = $group->sum('present');
                 // Cap at batchStudentCount to avoid > 100%
                 $cappedPresent = min($totalPresent, $batchStudentCount);
+
                 return [
-                    'subject'    => $group->first()['subject'],
-                    'code'       => $group->first()['code'],
-                    'present'    => $cappedPresent,
-                    'total'      => $batchStudentCount,
+                    'subject' => $group->first()['subject'],
+                    'code' => $group->first()['code'],
+                    'present' => $cappedPresent,
+                    'total' => $batchStudentCount,
                     'percentage' => $batchStudentCount > 0
                         ? round(($cappedPresent / $batchStudentCount) * 100, 1)
                         : 0,
@@ -175,22 +179,21 @@ class DashboardController extends Controller
             })
             ->values();
 
-
         $totalPossible = $mergedStats->count() * $batchStudentCount;
-        $totalPresent  = (int) $mergedStats->sum('present');
-        $avgTodayPct   = $totalPossible > 0
+        $totalPresent = (int) $mergedStats->sum('present');
+        $avgTodayPct = $totalPossible > 0
             ? (int) round(($totalPresent / $totalPossible) * 100) : 0;
 
         // Student base stats merged
         $baseStats = $this->studentDashboard($user);
 
         return array_merge($baseStats, [
-            'total_students'              => $batchStudentCount,
-            'today_subject_analytics'     => $mergedStats,
+            'total_students' => $batchStudentCount,
+            'today_subject_analytics' => $mergedStats,
             'attendance_today_percentage' => $avgTodayPct,
-            'attendance_today'            => $totalPresent,
-            'weekly_attendance'           => $this->weeklyAttendance(null, $batchId),
-            'notifications'               => $this->recentNotifications($user->id),
+            'attendance_today' => $totalPresent,
+            'weekly_attendance' => $this->weeklyAttendance(null, $batchId),
+            'notifications' => $this->recentNotifications($user->id),
         ]);
 
     }
@@ -198,11 +201,11 @@ class DashboardController extends Controller
     private function emptyRepData(User $user): array
     {
         return [
-            'total_students'              => 0,
+            'total_students' => 0,
             'attendance_today_percentage' => 0,
-            'today_subject_analytics'     => [],
-            'weekly_attendance'           => $this->weeklyAttendance(),
-            'notifications'               => $this->recentNotifications($user->id),
+            'today_subject_analytics' => [],
+            'weekly_attendance' => $this->weeklyAttendance(),
+            'notifications' => $this->recentNotifications($user->id),
         ];
     }
 
@@ -212,10 +215,12 @@ class DashboardController extends Controller
     private function lecturerDashboard(User $user): array
     {
         $lecturer = $user->lecturer;
-        if (!$lecturer) return [
-            'weekly_attendance' => $this->weeklyAttendance(),
-            'notifications'     => $this->recentNotifications($user->id),
-        ];
+        if (! $lecturer) {
+            return [
+                'weekly_attendance' => $this->weeklyAttendance(),
+                'notifications' => $this->recentNotifications($user->id),
+            ];
+        }
 
         $todayClasses = ClassSession::where('lecturer_id', $lecturer->id)
             ->where('date', today())
@@ -224,12 +229,12 @@ class DashboardController extends Controller
             ->get();
 
         return [
-            'today_classes'        => $todayClasses,
-            'total_subjects'       => $lecturer->semesterSubjects()->count(),
-            'weekly_attendance'    => $this->weeklyAttendance(),
-            'notifications'        => $this->recentNotifications($user->id),
+            'today_classes' => $todayClasses,
+            'total_subjects' => $lecturer->semesterSubjects()->count(),
+            'weekly_attendance' => $this->weeklyAttendance(),
+            'notifications' => $this->recentNotifications($user->id),
             'unread_notifications' => Notification::where('user_id', $user->id)
-                                          ->where('is_read', false)->count(),
+                ->where('is_read', false)->count(),
         ];
     }
 
@@ -239,15 +244,17 @@ class DashboardController extends Controller
     private function studentDashboard(User $user): array
     {
         $student = $user->student;
-        if (!$student) return [
-            'weekly_attendance' => $this->weeklyAttendance(),
-            'notifications'     => $this->recentNotifications($user->id),
-        ];
+        if (! $student) {
+            return [
+                'weekly_attendance' => $this->weeklyAttendance(),
+                'notifications' => $this->recentNotifications($user->id),
+            ];
+        }
 
-        $totalRecords   = AttendanceRecord::where('student_id', $student->id)->count();
+        $totalRecords = AttendanceRecord::where('student_id', $student->id)->count();
         $presentRecords = AttendanceRecord::where('student_id', $student->id)
-                              ->where('status', 'present')->count();
-        $attendancePct  = $totalRecords > 0
+            ->where('status', 'present')->count();
+        $attendancePct = $totalRecords > 0
             ? round(($presentRecords / $totalRecords) * 100, 1) : 0;
 
         $recentResults = Result::where('student_id', $student->id)
@@ -255,10 +262,10 @@ class DashboardController extends Controller
             ->with('subject', 'semester')
             ->latest()->take(5)->get()
             ->map(fn ($r) => [
-                'id'      => $r->id,
-                'grade'   => $r->grade ?? $r->grade_point,
+                'id' => $r->id,
+                'grade' => $r->grade ?? $r->grade_point,
                 'subject' => ['name' => $r->subject?->name, 'code' => $r->subject?->code],
-                'semester'=> ['name' => $r->semester?->name],
+                'semester' => ['name' => $r->semester?->name],
             ]);
 
         $gpa = Result::where('student_id', $student->id)
@@ -268,16 +275,16 @@ class DashboardController extends Controller
 
         return [
             'attendance_percentage' => $attendancePct,
-            'attendance_warning'    => $attendancePct < 75 && $totalRecords > 0,
-            'total_classes'         => $totalRecords,
-            'classes_attended'      => $presentRecords,
-            'recent_results'        => $recentResults,
-            'current_gpa'           => $gpa ? round($gpa, 2) : null,
-            'current_semester'      => $student->currentSemester,
-            'weekly_attendance'     => $this->weeklyAttendance($student->id),
-            'notifications'         => $this->recentNotifications($user->id),
-            'unread_notifications'  => Notification::where('user_id', $user->id)
-                                           ->where('is_read', false)->count(),
+            'attendance_warning' => $attendancePct < 75 && $totalRecords > 0,
+            'total_classes' => $totalRecords,
+            'classes_attended' => $presentRecords,
+            'recent_results' => $recentResults,
+            'current_gpa' => $gpa ? round($gpa, 2) : null,
+            'current_semester' => $student->currentSemester,
+            'weekly_attendance' => $this->weeklyAttendance($student->id),
+            'notifications' => $this->recentNotifications($user->id),
+            'unread_notifications' => Notification::where('user_id', $user->id)
+                ->where('is_read', false)->count(),
         ];
     }
 }

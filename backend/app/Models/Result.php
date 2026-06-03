@@ -23,13 +23,24 @@ class Result extends Model
         ];
     }
 
-    public function student() { return $this->belongsTo(Student::class); }
-    public function subject() { return $this->belongsTo(Subject::class); }
-    public function semester() { return $this->belongsTo(Semester::class); }
+    public function student()
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    public function subject()
+    {
+        return $this->belongsTo(Subject::class);
+    }
+
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class);
+    }
 
     public static function calculateGrade(float $totalMarks): array
     {
-        return match(true) {
+        return match (true) {
             $totalMarks >= 85 => ['grade' => 'A+', 'point' => 4.00],
             $totalMarks >= 75 => ['grade' => 'A',  'point' => 4.00],
             $totalMarks >= 70 => ['grade' => 'A-', 'point' => 3.70],
@@ -41,7 +52,7 @@ class Result extends Model
             $totalMarks >= 40 => ['grade' => 'C-', 'point' => 1.70],
             $totalMarks >= 35 => ['grade' => 'D+', 'point' => 1.30],
             $totalMarks >= 30 => ['grade' => 'D',  'point' => 1.00],
-            default           => ['grade' => 'F',  'point' => 0.00],
+            default => ['grade' => 'F',  'point' => 0.00],
         };
     }
 }

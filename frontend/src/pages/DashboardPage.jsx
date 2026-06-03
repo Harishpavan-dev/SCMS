@@ -29,6 +29,7 @@ import {
 import { Link } from 'react-router-dom';
 
 // ─── Stat Card ──────────────────────────────────────────────────────────────────
+// eslint-disable-next-line no-unused-vars
 const StatCard = ({ title, value, icon: Icon, accent }) => (
   <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center gap-5 hover:shadow-md transition-shadow duration-300">
     <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
@@ -69,6 +70,7 @@ const NotifItem = ({ type = 'info', text, time }) => {
 };
 
 // ─── Activity Item ──────────────────────────────────────────────────────────────
+// eslint-disable-next-line no-unused-vars
 const ActivityItem = ({ icon: Icon, color, bg, title, subtitle }) => (
   <div className="flex items-center gap-4 py-3.5 border-b border-slate-50 last:border-0">
     <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"

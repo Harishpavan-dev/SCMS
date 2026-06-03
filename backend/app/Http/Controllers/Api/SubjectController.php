@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\{Subject, Semester};
+use App\Models\Subject;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -15,8 +15,8 @@ class SubjectController extends Controller
         $query = Subject::with('semester');
 
         if ($request->has('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('code', 'like', '%' . $request->search . '%');
+            $query->where('name', 'like', '%'.$request->search.'%')
+                ->orWhere('code', 'like', '%'.$request->search.'%');
         }
 
         if ($request->has('semester_id')) {
@@ -43,7 +43,7 @@ class SubjectController extends Controller
             'code' => $request->code,
             'name' => $request->name,
             'credit_hours' => $request->credit_hours,
-            'semester_id' => $request->semester_id
+            'semester_id' => $request->semester_id,
         ]);
 
         return response()->json(['success' => true, 'data' => $subject->load('semester')], 201);
@@ -52,7 +52,7 @@ class SubjectController extends Controller
     public function update(Request $request, int $id): JsonResponse
     {
         $subject = Subject::findOrFail($id);
-        
+
         $validator = Validator::make($request->all(), [
             'code' => "required|unique:subjects,code,{$id}",
             'name' => 'required|string',
@@ -68,7 +68,7 @@ class SubjectController extends Controller
             'code' => $request->code,
             'name' => $request->name,
             'credit_hours' => $request->credit_hours,
-            'semester_id' => $request->semester_id
+            'semester_id' => $request->semester_id,
         ]);
 
         return response()->json(['success' => true, 'data' => $subject->load('semester')]);
@@ -77,12 +77,14 @@ class SubjectController extends Controller
     public function destroy(int $id): JsonResponse
     {
         Subject::findOrFail($id)->delete();
+
         return response()->json(['success' => true, 'message' => 'Subject deleted.']);
     }
 
     public function getBySemester(int $semesterId): JsonResponse
     {
         $subjects = Subject::where('semester_id', $semesterId)->get();
+
         return response()->json(['success' => true, 'data' => $subjects]);
     }
 }

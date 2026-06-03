@@ -25,7 +25,7 @@ export const StudentIdCard = () => {
   const avatarUrl = user?.avatar || null;
   
   const batchName = student?.batch?.name || 'Batch N/A';
-  const semesterName = student?.current_semester?.name || student?.currentSemester?.name || 'Semester N/A';
+
 
   const [downloading, setDownloading] = useState(false);
 

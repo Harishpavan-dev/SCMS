@@ -66,7 +66,7 @@ export const LecturersPage = () => {
     try {
       const response = await api.get('/lecturers');
       setLecturers(response.data.data || []);
-    } catch (error) {
+    } catch {
       toast.error('Failed to load faculty registry');
     } finally {
       setLoading(false);

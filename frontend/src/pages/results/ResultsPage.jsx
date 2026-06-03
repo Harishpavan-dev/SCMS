@@ -27,7 +27,7 @@ export const ResultsPage = () => {
         ]);
         setResults(resResponse.data.data.data || []);
         setGpaData(gpaResponse.data.data);
-      } catch (error) {
+      } catch {
         toast.error('Failed to load academic records');
       } finally {
         setLoading(false);

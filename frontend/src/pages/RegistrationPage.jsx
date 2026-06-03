@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Cropper from 'react-easy-crop';
 import api from '../api/client';
 import toast from 'react-hot-toast';
@@ -7,7 +7,7 @@ import { CheckCircleIcon, PhotoIcon, ArrowsPointingOutIcon, XMarkIcon, CheckIcon
 import getCroppedImg from '../utils/cropImage';
 
 export const RegistrationPage = () => {
-  const navigate = useNavigate();
+
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);

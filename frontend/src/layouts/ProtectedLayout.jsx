@@ -8,7 +8,7 @@ import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 
 export const ProtectedLayout = ({ allowedRoles = [] }) => {
-  const { isAuthenticated, user, checkAuth } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
 

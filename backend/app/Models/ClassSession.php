@@ -20,10 +20,25 @@ class ClassSession extends Model
         ];
     }
 
-    public function subject() { return $this->belongsTo(Subject::class); }
-    public function lecturer() { return $this->belongsTo(Lecturer::class); }
-    public function semester() { return $this->belongsTo(Semester::class); }
-    public function batch() { return $this->belongsTo(Batch::class); }
+    public function subject()
+    {
+        return $this->belongsTo(Subject::class);
+    }
+
+    public function lecturer()
+    {
+        return $this->belongsTo(Lecturer::class);
+    }
+
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class);
+    }
+
+    public function batch()
+    {
+        return $this->belongsTo(Batch::class);
+    }
 
     public function records()
     {

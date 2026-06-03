@@ -94,7 +94,7 @@ export const ProfilePage = () => {
       toast.success('Profile picture updated');
       setShowCropper(false);
       setImage(null);
-    } catch (error) {
+    } catch {
       toast.error('Failed to update profile picture');
     } finally {
       setLoading(false);

@@ -5,7 +5,7 @@ import api from '../../api/client';
 import toast from 'react-hot-toast';
 
 export const QRScannerPage = () => {
-  const [scanResult, setScanResult] = useState(null);
+
   const [loading, setLoading] = useState(false);
   const [marked, setMarked] = useState(false);
 
@@ -37,11 +37,10 @@ export const QRScannerPage = () => {
 
       currentScanned = result;
       scanner.clear();
-      setScanResult(result);
       handleMarkAttendance(result);
     };
 
-    const error = (err) => {
+    const error = () => {
       // Ignored for UX purposes as it scans continuously
     };
 
@@ -63,7 +62,6 @@ export const QRScannerPage = () => {
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to mark attendance');
       // Let them try again
-      setScanResult(null); 
     } finally {
       setLoading(false);
     }
@@ -87,7 +85,7 @@ export const QRScannerPage = () => {
             <h2 className="text-2xl font-bold text-slate-900 mb-2">Success!</h2>
             <p className="text-slate-600 mb-8">Your attendance has been recorded.</p>
             <button 
-              onClick={() => { setMarked(false); setScanResult(null); }}
+              onClick={() => { setMarked(false); }}
               className="btn btn-secondary w-full"
             >
               Scan Another Class

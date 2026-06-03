@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/client';
-import useAuthStore from '../stores/authStore';
+
 import { BellIcon, CheckIcon, ArchiveBoxIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 

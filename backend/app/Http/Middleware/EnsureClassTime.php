@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\ClassSession;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,13 +21,13 @@ class EnsureClassTime
             // Check if there's a class session happening now for the rep's batch
             $student = $user->student;
             if ($student) {
-                $hasActiveClass = \App\Models\ClassSession::where('batch_id', $student->batch_id)
+                $hasActiveClass = ClassSession::where('batch_id', $student->batch_id)
                     ->where('date', $now->toDateString())
                     ->where('start_time', '<=', $currentTime)
                     ->where('end_time', '>=', $currentTime)
                     ->exists();
 
-                if (!$hasActiveClass) {
+                if (! $hasActiveClass) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Attendance can only be marked during active class time.',

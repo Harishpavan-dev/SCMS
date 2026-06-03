@@ -1,5 +1,6 @@
 import axios from 'axios';
 import useAuthStore from '../stores/authStore';
+import toast from 'react-hot-toast';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
@@ -47,9 +48,19 @@ api.interceptors.response.use(
           
           return axios(originalRequest);
         }
-      } catch (refreshError) {
+      } catch {
         useAuthStore.getState().logout();
       }
+    }
+
+    // Global Error Handling
+    if (!error.response) {
+      // Network error or server is down
+      toast.error('Network Error: Unable to reach the server.');
+    } else if (error.response.status >= 500) {
+      toast.error('Server Error: Something went wrong on our end.');
+    } else if (error.response.status === 403) {
+      toast.error(error.response.data?.message || 'Access Denied.');
     }
     
     return Promise.reject(error);

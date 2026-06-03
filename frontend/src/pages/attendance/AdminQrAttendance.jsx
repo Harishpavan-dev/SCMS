@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../../api/client';
 import useAuthStore from '../../stores/authStore';
 import { 
@@ -203,7 +203,7 @@ export const AdminQrAttendance = () => {
         }, 2000);
       };
 
-      scanner.render(onScanSuccess, (e) => {});
+      scanner.render(onScanSuccess, () => {});
       
       return () => {
         scanner.clear().catch(err => console.error(err));

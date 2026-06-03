@@ -3,11 +3,20 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\{Batch, Semester, Subject, Lecturer, User, Notification, FileUpload, ClassSession};
+use App\Models\Batch;
+use App\Models\ClassSession;
+use App\Models\FileUpload;
+use App\Models\Lecturer;
+use App\Models\Notification;
+use App\Models\Semester;
+use App\Models\Subject;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class ResourceController extends Controller
 {
@@ -23,9 +32,12 @@ class ResourceController extends Controller
             'name' => 'required|string|max:100',
             'year' => 'required|integer|min:2020|max:2040',
         ]);
-        if ($v->fails()) return response()->json(['success' => false, 'errors' => $v->errors()], 422);
+        if ($v->fails()) {
+            return response()->json(['success' => false, 'errors' => $v->errors()], 422);
+        }
 
         $batch = Batch::create($request->only('name', 'year'));
+
         return response()->json(['success' => true, 'data' => $batch], 201);
     }
 
@@ -33,12 +45,14 @@ class ResourceController extends Controller
     {
         $batch = Batch::findOrFail($id);
         $batch->update($request->only('name', 'year', 'is_active'));
+
         return response()->json(['success' => true, 'data' => $batch]);
     }
 
     public function batchDestroy(int $id): JsonResponse
     {
         Batch::findOrFail($id)->delete();
+
         return response()->json(['success' => true, 'message' => 'Batch deleted.']);
     }
 
@@ -56,9 +70,12 @@ class ResourceController extends Controller
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after:start_date',
         ]);
-        if ($v->fails()) return response()->json(['success' => false, 'errors' => $v->errors()], 422);
+        if ($v->fails()) {
+            return response()->json(['success' => false, 'errors' => $v->errors()], 422);
+        }
 
         $semester = Semester::create($request->only('name', 'number', 'start_date', 'end_date'));
+
         return response()->json(['success' => true, 'data' => $semester], 201);
     }
 
@@ -66,12 +83,14 @@ class ResourceController extends Controller
     {
         $semester = Semester::findOrFail($id);
         $semester->update($request->only('name', 'number', 'start_date', 'end_date', 'is_active'));
+
         return response()->json(['success' => true, 'data' => $semester]);
     }
 
     public function semesterDestroy(int $id): JsonResponse
     {
         Semester::findOrFail($id)->delete();
+
         return response()->json(['success' => true, 'message' => 'Semester deleted.']);
     }
 
@@ -82,6 +101,7 @@ class ResourceController extends Controller
         if ($request->has('semester_id')) {
             $query->where('semester_id', $request->semester_id);
         }
+
         return response()->json(['success' => true, 'data' => $query->orderBy('code')->get()]);
     }
 
@@ -94,9 +114,12 @@ class ResourceController extends Controller
             'description' => 'nullable|string',
             'semester_id' => 'nullable|exists:semesters,id',
         ]);
-        if ($v->fails()) return response()->json(['success' => false, 'errors' => $v->errors()], 422);
+        if ($v->fails()) {
+            return response()->json(['success' => false, 'errors' => $v->errors()], 422);
+        }
 
         $subject = Subject::create($request->only('code', 'name', 'credit_hours', 'description', 'semester_id'));
+
         return response()->json(['success' => true, 'data' => $subject], 201);
     }
 
@@ -104,17 +127,21 @@ class ResourceController extends Controller
     {
         $subject = Subject::findOrFail($id);
         $v = Validator::make($request->all(), [
-            'code' => 'sometimes|string|max:20|unique:subjects,code,' . $id,
+            'code' => 'sometimes|string|max:20|unique:subjects,code,'.$id,
             'name' => 'sometimes|string|max:255',
         ]);
-        if ($v->fails()) return response()->json(['success' => false, 'errors' => $v->errors()], 422);
+        if ($v->fails()) {
+            return response()->json(['success' => false, 'errors' => $v->errors()], 422);
+        }
         $subject->update($request->only('code', 'name', 'credit_hours', 'description', 'semester_id'));
+
         return response()->json(['success' => true, 'data' => $subject]);
     }
 
     public function subjectDestroy(int $id): JsonResponse
     {
         Subject::findOrFail($id)->delete();
+
         return response()->json(['success' => true, 'message' => 'Subject deleted.']);
     }
 
@@ -132,9 +159,11 @@ class ResourceController extends Controller
             'phone' => 'nullable|string|max:20',
             'specialization' => 'nullable|string|max:255',
         ]);
-        if ($v->fails()) return response()->json(['success' => false, 'errors' => $v->errors()], 422);
+        if ($v->fails()) {
+            return response()->json(['success' => false, 'errors' => $v->errors()], 422);
+        }
 
-        $password = \Illuminate\Support\Str::random(8);
+        $password = Str::random(8);
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -145,7 +174,7 @@ class ResourceController extends Controller
 
         $lecturer = Lecturer::create([
             'user_id' => $user->id,
-            'employee_id' => 'LEC-' . str_pad($user->id, 4, '0', STR_PAD_LEFT),
+            'employee_id' => 'LEC-'.str_pad($user->id, 4, '0', STR_PAD_LEFT),
             'specialization' => $request->specialization,
         ]);
 
@@ -161,17 +190,21 @@ class ResourceController extends Controller
 
         $v = Validator::make($request->all(), [
             'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|email|unique:users,email,' . $lecturer->user_id,
+            'email' => 'sometimes|email|unique:users,email,'.$lecturer->user_id,
             'phone' => 'nullable|string|max:20',
             'specialization' => 'nullable|string|max:255',
             'department' => 'nullable|string|max:255',
             'subject_ids' => 'sometimes|array',
             'subject_ids.*' => 'exists:subjects,id',
         ]);
-        if ($v->fails()) return response()->json(['success' => false, 'errors' => $v->errors()], 422);
+        if ($v->fails()) {
+            return response()->json(['success' => false, 'errors' => $v->errors()], 422);
+        }
 
         $userFields = $request->only(['name', 'email', 'phone']);
-        if (!empty($userFields)) $lecturer->user()->update($userFields);
+        if (! empty($userFields)) {
+            $lecturer->user()->update($userFields);
+        }
         $lecturer->update($request->only('department', 'specialization'));
 
         if ($request->has('subject_ids')) {
@@ -185,6 +218,7 @@ class ResourceController extends Controller
     {
         $lecturer = Lecturer::findOrFail($id);
         $lecturer->user()->delete();
+
         return response()->json(['success' => true, 'message' => 'Lecturer deleted.']);
     }
 
@@ -193,18 +227,21 @@ class ResourceController extends Controller
     {
         $notifications = Notification::where('user_id', $request->user()->id)
             ->latest()->paginate(20);
+
         return response()->json(['success' => true, 'data' => $notifications]);
     }
 
     public function notificationMarkRead(int $id): JsonResponse
     {
         Notification::findOrFail($id)->update(['is_read' => true]);
+
         return response()->json(['success' => true]);
     }
 
     public function notificationMarkAllRead(Request $request): JsonResponse
     {
         Notification::where('user_id', $request->user()->id)->update(['is_read' => true]);
+
         return response()->json(['success' => true, 'message' => 'All notifications marked as read.']);
     }
 
@@ -212,8 +249,13 @@ class ResourceController extends Controller
     public function fileIndex(Request $request): JsonResponse
     {
         $query = FileUpload::with(['uploader', 'subject']);
-        if ($request->has('subject_id')) $query->where('subject_id', $request->subject_id);
-        if ($request->has('type')) $query->where('type', $request->type);
+        if ($request->has('subject_id')) {
+            $query->where('subject_id', $request->subject_id);
+        }
+        if ($request->has('type')) {
+            $query->where('type', $request->type);
+        }
+
         return response()->json(['success' => true, 'data' => $query->latest()->paginate(20)]);
     }
 
@@ -226,10 +268,12 @@ class ResourceController extends Controller
             'semester_id' => 'nullable|exists:semesters,id',
             'type' => 'required|in:note,material,assignment,other',
         ]);
-        if ($v->fails()) return response()->json(['success' => false, 'errors' => $v->errors()], 422);
+        if ($v->fails()) {
+            return response()->json(['success' => false, 'errors' => $v->errors()], 422);
+        }
 
         $file = $request->file('file');
-        $path = $file->store('uploads/' . $request->type, 'public');
+        $path = $file->store('uploads/'.$request->type, 'public');
 
         $upload = FileUpload::create([
             'uploaded_by' => $request->user()->id,
@@ -249,8 +293,9 @@ class ResourceController extends Controller
     public function fileDestroy(int $id): JsonResponse
     {
         $file = FileUpload::findOrFail($id);
-        \Illuminate\Support\Facades\Storage::disk('public')->delete($file->file_path);
+        Storage::disk('public')->delete($file->file_path);
         $file->delete();
+
         return response()->json(['success' => true, 'message' => 'File deleted.']);
     }
 
@@ -266,9 +311,15 @@ class ResourceController extends Controller
             $query->where('batch_id', $user->student->batch_id);
         }
 
-        if ($request->has('date')) $query->where('date', $request->date);
-        if ($request->has('from_date')) $query->where('date', '>=', $request->from_date);
-        if ($request->has('to_date')) $query->where('date', '<=', $request->to_date);
+        if ($request->has('date')) {
+            $query->where('date', $request->date);
+        }
+        if ($request->has('from_date')) {
+            $query->where('date', '>=', $request->from_date);
+        }
+        if ($request->has('to_date')) {
+            $query->where('date', '<=', $request->to_date);
+        }
 
         return response()->json([
             'success' => true,
@@ -280,18 +331,22 @@ class ResourceController extends Controller
     public function userIndex(Request $request): JsonResponse
     {
         $query = User::query();
-        if ($request->has('role')) $query->where('role', $request->role);
+        if ($request->has('role')) {
+            $query->where('role', $request->role);
+        }
         if ($request->has('search')) {
             $s = $request->search;
-            $query->where(fn($q) => $q->where('name', 'like', "%{$s}%")->orWhere('email', 'like', "%{$s}%"));
+            $query->where(fn ($q) => $q->where('name', 'like', "%{$s}%")->orWhere('email', 'like', "%{$s}%"));
         }
+
         return response()->json(['success' => true, 'data' => $query->latest()->paginate(20)]);
     }
 
     public function userToggleActive(int $id): JsonResponse
     {
         $user = User::findOrFail($id);
-        $user->update(['is_active' => !$user->is_active]);
+        $user->update(['is_active' => ! $user->is_active]);
+
         return response()->json(['success' => true, 'data' => $user]);
     }
 
@@ -300,7 +355,7 @@ class ResourceController extends Controller
     {
         $request->validate([
             'token' => 'required|string',
-            'device_type' => 'nullable|string'
+            'device_type' => 'nullable|string',
         ]);
 
         $request->user()->fcmTokens()->updateOrCreate(

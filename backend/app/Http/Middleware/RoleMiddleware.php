@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class RoleMiddleware
@@ -12,19 +13,20 @@ class RoleMiddleware
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized.',
             ], 401);
         }
 
-        if (!in_array($user->role, $roles)) {
-            \Illuminate\Support\Facades\Log::warning('Role Middleware Access Denied', [
+        if (! in_array($user->role, $roles)) {
+            Log::warning('Role Middleware Access Denied', [
                 'user_role' => $user->role,
                 'allowed_roles' => $roles,
                 'url' => $request->fullUrl(),
             ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'You do not have permission to access this resource.',

@@ -15,7 +15,7 @@ class JWTAuth
     {
         $token = $request->bearerToken();
 
-        if (!$token) {
+        if (! $token) {
             return response()->json([
                 'success' => false,
                 'message' => 'Authentication token is required.',
@@ -24,14 +24,14 @@ class JWTAuth
 
         $user = $this->jwt->getUserFromToken($token);
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid or expired token.',
             ], 401);
         }
 
-        if (!$user->is_active) {
+        if (! $user->is_active) {
             return response()->json([
                 'success' => false,
                 'message' => 'Your account has been deactivated.',
@@ -39,7 +39,7 @@ class JWTAuth
         }
 
         $request->merge(['auth_user' => $user]);
-        $request->setUserResolver(fn() => $user);
+        $request->setUserResolver(fn () => $user);
 
         return $next($request);
     }

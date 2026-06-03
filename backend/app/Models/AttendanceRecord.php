@@ -16,7 +16,18 @@ class AttendanceRecord extends Model
         return ['marked_at' => 'datetime'];
     }
 
-    public function classSession() { return $this->belongsTo(ClassSession::class); }
-    public function student() { return $this->belongsTo(Student::class); }
-    public function markedByUser() { return $this->belongsTo(User::class, 'marked_by'); }
+    public function classSession()
+    {
+        return $this->belongsTo(ClassSession::class);
+    }
+
+    public function student()
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    public function markedByUser()
+    {
+        return $this->belongsTo(User::class, 'marked_by');
+    }
 }

@@ -5,13 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\JWTService;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
-use Exception;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
@@ -34,14 +35,14 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid email or password.',
             ], 401);
         }
 
-        if (!$user->is_active) {
+        if (! $user->is_active) {
             return response()->json([
                 'success' => false,
                 'message' => 'Your account has been deactivated. Contact admin.',
@@ -102,7 +103,7 @@ class AuthController extends Controller
 
         $result = $this->jwt->refreshToken($request->refresh_token);
 
-        if (!$result) {
+        if (! $result) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid or expired refresh token.',
@@ -131,7 +132,7 @@ class AuthController extends Controller
 
         $user = $request->user();
 
-        if (!Hash::check($request->current_password, $user->password)) {
+        if (! Hash::check($request->current_password, $user->password)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Current password is incorrect.',
@@ -151,14 +152,14 @@ class AuthController extends Controller
         $request->validate(['email' => 'required|email|exists:users,email']);
 
         $token = rand(100000, 999999);
-        
+
         DB::table('password_reset_tokens')->updateOrInsert(
             ['email' => $request->email],
             ['token' => $token, 'created_at' => now()]
         );
 
         try {
-            \Illuminate\Support\Facades\Mail::send([], [], function ($message) use ($request, $token) {
+            Mail::send([], [], function ($message) use ($request, $token) {
                 $message->to($request->email)
                     ->subject('Password Reset Code - SCMS')
                     ->html("
@@ -181,8 +182,8 @@ class AuthController extends Controller
             });
 
             return response()->json(['success' => true, 'message' => 'Reset code sent to your email.']);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Failed to send email. ' . $e->getMessage()], 500);
+        } catch (Exception $e) {
+            abort(500, 'Failed to send email. '.$e->getMessage());
         }
     }
 
@@ -191,7 +192,7 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|exists:users,email',
             'token' => 'required|string',
-            'password' => 'required|string|min:8|confirmed'
+            'password' => 'required|string|min:8|confirmed',
         ]);
 
         if ($validator->fails()) {
@@ -203,7 +204,7 @@ class AuthController extends Controller
             ->where('token', $request->token)
             ->first();
 
-        if (!$record || now()->parse($record->created_at)->addMinutes(15)->isPast()) {
+        if (! $record || now()->parse($record->created_at)->addMinutes(15)->isPast()) {
             return response()->json(['success' => false, 'message' => 'Invalid or expired code.'], 400);
         }
 
@@ -218,10 +219,10 @@ class AuthController extends Controller
     public function updateProfile(Request $request): JsonResponse
     {
         $user = $request->user();
-        
+
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|email|unique:users,email,' . $user->id,
+            'email' => 'sometimes|email|unique:users,email,'.$user->id,
             'phone' => 'sometimes|nullable|string|max:20',
             'avatar_base64' => 'sometimes|nullable|string',
             'address' => 'sometimes|nullable|string',
@@ -241,11 +242,11 @@ class AuthController extends Controller
                     $imageData = substr($imageData, strpos($imageData, ',') + 1);
                     $type = strtolower($type[1]);
                     $imageData = base64_decode($imageData);
-                    
-                    $fileName = 'avatar_' . $user->id . '_' . time() . '.' . $type;
-                    Storage::disk('public')->put('avatars/' . $fileName, $imageData);
-                    
-                    $user->update(['avatar' => config('app.url') . '/storage/avatars/' . $fileName]);
+
+                    $fileName = 'avatar_'.$user->id.'_'.time().'.'.$type;
+                    Storage::disk('public')->put('avatars/'.$fileName, $imageData);
+
+                    $user->update(['avatar' => config('app.url').'/storage/avatars/'.$fileName]);
                 }
             }
 
@@ -254,15 +255,15 @@ class AuthController extends Controller
             }
 
             DB::commit();
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Profile updated successfully.',
-                'data' => $this->formatUser($user->load(['student.batch', 'student.currentSemester']))
+                'data' => $this->formatUser($user->load(['student.batch', 'student.currentSemester'])),
             ]);
         } catch (Exception $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Update failed: ' . $e->getMessage()], 500);
+            abort(500, 'Update failed: '.$e->getMessage());
         }
     }
 

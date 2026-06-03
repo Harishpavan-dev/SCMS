@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -26,7 +26,7 @@ return new class extends Migration
             // Drop foreign key first
             $table->dropForeign(['attendance_session_id']);
             $table->dropColumn('attendance_session_id');
-            
+
             // Make class_session_id required now that data is migrated
             // Note: In SQLite (common for tests) change() is tricky, but for MySQL it works.
             $table->unsignedBigInteger('class_session_id')->nullable(false)->change();

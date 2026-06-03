@@ -14,8 +14,11 @@ class SendPushNotification implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected $userId;
+
     protected $title;
+
     protected $body;
+
     protected $data;
 
     /**

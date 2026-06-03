@@ -3,11 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\{AttendanceRecord, ClassSession, Student, Subject};
+use App\Jobs\SendPushNotification;
+use App\Models\AttendanceRecord;
+use App\Models\ClassSession;
+use App\Models\Student;
+use App\Models\Subject;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 class AttendanceController extends Controller
 {
@@ -34,29 +38,31 @@ class AttendanceController extends Controller
             ->where('student_id', $studentId);
 
         if ($subjectId) {
-            $query->whereHas('classSession', fn($q) => $q->where('subject_id', $subjectId));
+            $query->whereHas('classSession', fn ($q) => $q->where('subject_id', $subjectId));
         }
 
         $records = $query->latest('marked_at')->paginate(20);
 
         // Subject-wise percentage
         $subjects = Subject::where('semester_id', $student->current_semester_id)->get();
-        
+
         $summary = [];
         $totalPresent = 0;
         $totalSessionsCounted = 0;
 
         foreach ($subjects as $subject) {
             $totalSubSessions = ClassSession::where('batch_id', $student->batch_id)
-                  ->where('semester_id', $student->current_semester_id)
-                  ->where('subject_id', $subject->id)
-                  ->count();
+                ->where('semester_id', $student->current_semester_id)
+                ->where('subject_id', $subject->id)
+                ->count();
 
-            if ($totalSubSessions === 0) continue;
+            if ($totalSubSessions === 0) {
+                continue;
+            }
 
             $subPresentCount = AttendanceRecord::where('student_id', $studentId)
                 ->where('status', 'present')
-                ->whereHas('classSession', fn($q) => $q->where('subject_id', $subject->id))
+                ->whereHas('classSession', fn ($q) => $q->where('subject_id', $subject->id))
                 ->count();
 
             $subPercentage = round(($subPresentCount / $totalSubSessions) * 100, 2);
@@ -66,7 +72,7 @@ class AttendanceController extends Controller
                 'subject_name' => $subject->name,
                 'present' => $subPresentCount,
                 'total' => $totalSubSessions,
-                'percentage' => $subPercentage
+                'percentage' => $subPercentage,
             ];
 
             $totalPresent += $subPresentCount;
@@ -83,7 +89,7 @@ class AttendanceController extends Controller
                 'overall_percentage' => $overallPercentage,
                 'total_present' => $totalPresent,
                 'total_sessions' => $totalSessionsCounted,
-                'total_absent' => $totalSessionsCounted - $totalPresent
+                'total_absent' => $totalSessionsCounted - $totalPresent,
             ],
         ]);
     }
@@ -105,13 +111,11 @@ class AttendanceController extends Controller
         $query = AttendanceRecord::with(['student.user', 'classSession.subject']);
 
         if ($request->has('subject_id')) {
-            $query->whereHas('classSession', fn($q) =>
-                $q->where('subject_id', $request->subject_id));
+            $query->whereHas('classSession', fn ($q) => $q->where('subject_id', $request->subject_id));
         }
 
         if ($request->has('batch_id')) {
-            $query->whereHas('classSession', fn($q) =>
-                $q->where('batch_id', $request->batch_id));
+            $query->whereHas('classSession', fn ($q) => $q->where('batch_id', $request->batch_id));
         }
 
         if ($request->has('from_date')) {
@@ -129,7 +133,6 @@ class AttendanceController extends Controller
             'data' => $records,
         ]);
     }
-
 
     public function updateStatus(Request $request): JsonResponse
     {
@@ -174,13 +177,13 @@ class AttendanceController extends Controller
         $session = $record->classSession;
         $subject = $session->subject->name;
         $status = strtoupper($record->status);
-        
+
         $message = "Hello {$user->name}, your attendance for {$subject} has been marked as {$status}.";
-        
+
         // Log for demonstration
-        \Illuminate\Support\Facades\Log::info("WhatsApp Notification sent to {$user->phone}: {$message}");
-        
-    // In a real app, use Twilio or UltraMsg here:
+        Log::info("WhatsApp Notification sent to {$user->phone}: {$message}");
+
+        // In a real app, use Twilio or UltraMsg here:
         // Http::post('https://api.whatsapp.com/send', [...]);
     }
 
@@ -189,11 +192,11 @@ class AttendanceController extends Controller
         try {
             // Ensure relationships are loaded
             $record->load(['student.user', 'classSession.subject']);
-            
+
             $student = $record->student;
             $session = $record->classSession;
 
-            if (!$student || !$session || !$session->subject) {
+            if (! $student || ! $session || ! $session->subject) {
                 return;
             }
 
@@ -203,7 +206,7 @@ class AttendanceController extends Controller
             $title = "Attendance Update: {$subjectName}";
             $body = "Hi {$student->user->name}, your attendance for {$subjectName} today has been marked as {$status}.";
 
-            \App\Jobs\SendPushNotification::dispatch(
+            SendPushNotification::dispatch(
                 $student->user_id,
                 $title,
                 $body,
@@ -211,11 +214,11 @@ class AttendanceController extends Controller
                     'type' => 'attendance_update',
                     'record_id' => $record->id,
                     'status' => $record->status,
-                    'subject' => $subjectName
+                    'subject' => $subjectName,
                 ]
             );
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Failed to queue attendance notification: " . $e->getMessage());
+            Log::error('Failed to queue attendance notification: '.$e->getMessage());
         }
     }
 
@@ -233,26 +236,30 @@ class AttendanceController extends Controller
 
         $query = Student::with(['user', 'batch', 'currentSemester']);
 
-        if ($request->has('batch_id')) $query->where('batch_id', $request->batch_id);
-        if ($request->has('semester_id')) $query->where('current_semester_id', $request->semester_id);
+        if ($request->has('batch_id')) {
+            $query->where('batch_id', $request->batch_id);
+        }
+        if ($request->has('semester_id')) {
+            $query->where('current_semester_id', $request->semester_id);
+        }
 
         $students = $query->get()->map(function ($student) use ($request) {
             $recordsQuery = $student->attendanceRecords()
-                ->whereHas('classSession', function($q) use ($request) {
+                ->whereHas('classSession', function ($q) use ($request) {
                     if ($request->has('subject_id')) {
                         $q->where('subject_id', $request->subject_id);
                     }
                 });
 
             $totalSessions = ClassSession::where('batch_id', $student->batch_id)
-                  ->where('semester_id', $student->current_semester_id);
-                if ($request->has('subject_id')) {
-                    $totalSessions->where('subject_id', $request->subject_id);
-                }
+                ->where('semester_id', $student->current_semester_id);
+            if ($request->has('subject_id')) {
+                $totalSessions->where('subject_id', $request->subject_id);
+            }
             $totalSessions = $totalSessions->count();
 
             $presentCount = (clone $recordsQuery)->where('status', 'present')->count();
-            
+
             $percentage = $totalSessions > 0 ? round(($presentCount / $totalSessions) * 100, 2) : 0;
 
             return [
@@ -266,9 +273,10 @@ class AttendanceController extends Controller
         });
 
         // Numeric ordering by registration number (assuming format ATI/HNDIT/YYYY/XXX)
-        $students = $students->sortBy(function($s) {
+        $students = $students->sortBy(function ($s) {
             preg_match('/(\d+)$/', $s['registration_number'], $matches);
-            return (int)($matches[1] ?? 0);
+
+            return (int) ($matches[1] ?? 0);
         })->values();
 
         return response()->json([
@@ -281,22 +289,22 @@ class AttendanceController extends Controller
     {
         $user = $request->user();
         $student = $user->student;
-        
-        if (!$student && $user->role !== 'admin' && $user->role !== 'hod') {
-             return response()->json(['success' => false, 'message' => 'Profile not found.'], 404);
+
+        if (! $student && $user->role !== 'admin' && $user->role !== 'hod') {
+            return response()->json(['success' => false, 'message' => 'Profile not found.'], 404);
         }
 
         $batchId = $student ? $student->batch_id : $request->batch_id;
         $semesterId = $student ? $student->current_semester_id : $request->semester_id;
 
-        if (!$batchId || !$semesterId) {
-             return response()->json(['success' => false, 'message' => 'Batch or Semester info missing.'], 422);
+        if (! $batchId || ! $semesterId) {
+            return response()->json(['success' => false, 'message' => 'Batch or Semester info missing.'], 422);
         }
 
         $query = ClassSession::with(['subject', 'lecturer.user'])
             ->where('batch_id', $batchId)
             ->where('semester_id', $semesterId);
-        
+
         if ($request->has('subject_id')) {
             $query->where('subject_id', $request->subject_id);
         }
@@ -333,15 +341,15 @@ class AttendanceController extends Controller
         $user = $request->user();
         $student = $user->student;
 
-        if (!$student && $user->role !== 'admin' && $user->role !== 'hod') {
-             return response()->json(['success' => false, 'message' => 'Profile not found.'], 404);
+        if (! $student && $user->role !== 'admin' && $user->role !== 'hod') {
+            return response()->json(['success' => false, 'message' => 'Profile not found.'], 404);
         }
 
         $batchId = $student ? $student->batch_id : $request->batch_id;
         $semesterId = $student ? $student->current_semester_id : $request->semester_id;
 
-        if (!$batchId || !$semesterId) {
-             return response()->json(['success' => false, 'message' => 'Batch or Semester info missing.'], 422);
+        if (! $batchId || ! $semesterId) {
+            return response()->json(['success' => false, 'message' => 'Batch or Semester info missing.'], 422);
         }
 
         $students = Student::with('user')
@@ -349,7 +357,7 @@ class AttendanceController extends Controller
             ->where('current_semester_id', $semesterId)
             ->get();
 
-        $subjects = \App\Models\Subject::where('semester_id', $semesterId)->get();
+        $subjects = Subject::where('semester_id', $semesterId)->get();
 
         // Optimized Analytics: Fetch all counts in fewer queries
         $sessionCounts = ClassSession::where('batch_id', $batchId)
@@ -360,7 +368,7 @@ class AttendanceController extends Controller
 
         $attendanceCounts = AttendanceRecord::whereIn('student_id', $students->pluck('id'))
             ->where('attendance_records.status', 'present')
-            ->whereHas('classSession', function($q) use ($batchId, $semesterId) {
+            ->whereHas('classSession', function ($q) use ($batchId, $semesterId) {
                 $q->where('batch_id', $batchId)->where('semester_id', $semesterId);
             })
             ->join('class_sessions', 'attendance_records.class_session_id', '=', 'class_sessions.id')
@@ -376,7 +384,7 @@ class AttendanceController extends Controller
                 'id' => $stu->id,
                 'name' => $stu->user->name,
                 'registration_number' => $stu->registration_number,
-                'subject_stats' => []
+                'subject_stats' => [],
             ];
 
             $totalPresent = 0;
@@ -388,12 +396,12 @@ class AttendanceController extends Controller
                 $subPresentCount = $stuAttendance->where('subject_id', $subject->id)->first()?->present_count ?? 0;
 
                 $percent = $totalSubSessions > 0 ? round(($subPresentCount / $totalSubSessions) * 100) : 0;
-                
+
                 $studentData['subject_stats'][] = [
                     'subject_id' => $subject->id,
-                    'percentage' => $percent
+                    'percentage' => $percent,
                 ];
-                
+
                 $totalPresent += $subPresentCount;
             }
 
@@ -402,19 +410,21 @@ class AttendanceController extends Controller
         }
 
         // Numeric ordering by registration number
-        $data = collect($data)->sortBy(function($s) {
+        $data = collect($data)->sortBy(function ($s) {
             preg_match('/(\d+)$/', $s['registration_number'], $matches);
-            return (int)($matches[1] ?? 0);
+
+            return (int) ($matches[1] ?? 0);
         })->values();
 
         return response()->json([
             'success' => true,
             'data' => [
                 'students' => $data,
-                'subjects' => $subjects
-            ]
+                'subjects' => $subjects,
+            ],
         ]);
     }
+
     public function updateStatusDirect(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
@@ -436,7 +446,7 @@ class AttendanceController extends Controller
 
         // 1. Resolve student ID if registration number is provided
         $studentId = $request->student_id;
-        if (!$studentId && $request->registration_number) {
+        if (! $studentId && $request->registration_number) {
             $studentId = Student::where('registration_number', $request->registration_number)->value('id');
         }
 
@@ -444,7 +454,7 @@ class AttendanceController extends Controller
         if ($user->role === 'rep' && $request->date !== now()->toDateString()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Representatives can only mark attendance for the current day.'
+                'message' => 'Representatives can only mark attendance for the current day.',
             ], 403);
         }
 
@@ -481,11 +491,11 @@ class AttendanceController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "Attendance updated directly.",
+            'message' => 'Attendance updated directly.',
             'data' => [
                 'record' => $record,
-                'session_id' => $session->id
-            ]
+                'session_id' => $session->id,
+            ],
         ]);
     }
 
@@ -504,10 +514,10 @@ class AttendanceController extends Controller
 
         // Find session if exists
         $session = ClassSession::where('subject_id', $request->subject_id)
-              ->where('batch_id', $request->batch_id)
-              ->where('date', $request->date)
-              ->where('period', $request->period)
-              ->first();
+            ->where('batch_id', $request->batch_id)
+            ->where('date', $request->date)
+            ->where('period', $request->period)
+            ->first();
 
         // Get all students in batch
         $students = Student::with('user')
@@ -516,10 +526,10 @@ class AttendanceController extends Controller
 
         $records = $session ? AttendanceRecord::where('class_session_id', $session->id)->get()->pluck('status', 'student_id') : collect();
 
-        $data = $students->map(function($student) use ($records) {
+        $data = $students->map(function ($student) use ($records) {
             return [
                 'student' => $student,
-                'status' => $records[$student->id] ?? 'unmarked'
+                'status' => $records[$student->id] ?? 'unmarked',
             ];
         });
 
@@ -527,8 +537,8 @@ class AttendanceController extends Controller
             'success' => true,
             'data' => [
                 'session' => $session,
-                'records' => $data
-            ]
+                'records' => $data,
+            ],
         ]);
     }
 }

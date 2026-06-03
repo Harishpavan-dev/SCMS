@@ -3,7 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\{Result, Student, Subject};
+use App\Models\Result;
+use App\Models\Student;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -14,9 +15,15 @@ class ResultController extends Controller
     {
         $query = Result::with(['student.user', 'subject', 'semester']);
 
-        if ($request->has('semester_id')) $query->where('semester_id', $request->semester_id);
-        if ($request->has('subject_id')) $query->where('subject_id', $request->subject_id);
-        if ($request->has('student_id')) $query->where('student_id', $request->student_id);
+        if ($request->has('semester_id')) {
+            $query->where('semester_id', $request->semester_id);
+        }
+        if ($request->has('subject_id')) {
+            $query->where('subject_id', $request->subject_id);
+        }
+        if ($request->has('student_id')) {
+            $query->where('student_id', $request->student_id);
+        }
 
         $user = $request->user();
         if (in_array($user->role, ['student', 'rep'])) {

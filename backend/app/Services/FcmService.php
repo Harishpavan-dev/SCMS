@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\FcmToken;
 use Firebase\JWT\JWT;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use App\Models\FcmToken;
 
 class FcmService
 {
@@ -21,8 +21,9 @@ class FcmService
      */
     protected function getAccessToken()
     {
-        if (!file_exists($this->credentialsPath)) {
-            Log::error("Firebase service account file not found at: " . $this->credentialsPath);
+        if (! file_exists($this->credentialsPath)) {
+            Log::error('Firebase service account file not found at: '.$this->credentialsPath);
+
             return null;
         }
 
@@ -48,7 +49,8 @@ class FcmService
             return $response->json('access_token');
         }
 
-        Log::error("Failed to get FCM Access Token: " . $response->body());
+        Log::error('Failed to get FCM Access Token: '.$response->body());
+
         return null;
     }
 
@@ -58,10 +60,14 @@ class FcmService
     public function sendNotification($userId, $title, $body, $data = [])
     {
         $accessToken = $this->getAccessToken();
-        if (!$accessToken) return false;
+        if (! $accessToken) {
+            return false;
+        }
 
         $tokens = FcmToken::where('user_id', $userId)->pluck('token')->toArray();
-        if (empty($tokens)) return false;
+        if (empty($tokens)) {
+            return false;
+        }
 
         $credentials = json_decode(file_get_contents($this->credentialsPath), true);
         $projectId = $credentials['project_id'];
@@ -83,10 +89,10 @@ class FcmService
                         ],
                         'notification' => [
                             'icon' => '/logo192.png',
-                            'click_action' => config('app.frontend_url', 'http://localhost:5173') . '/dashboard',
+                            'click_action' => config('app.frontend_url', 'http://localhost:5173').'/dashboard',
                         ],
                     ],
-                ]
+                ],
             ];
 
             $response = Http::withToken($accessToken)->post($url, $message);
@@ -94,7 +100,7 @@ class FcmService
             if ($response->successful()) {
                 $successCount++;
             } else {
-                Log::warning("FCM Send Error for user {$userId}: " . $response->body());
+                Log::warning("FCM Send Error for user {$userId}: ".$response->body());
                 // If token is invalid, remove it
                 if ($response->status() === 404 || $response->status() === 410) {
                     FcmToken::where('token', $token)->delete();
