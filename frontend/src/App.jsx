@@ -28,6 +28,7 @@ import { SubjectsPage } from './pages/subjects/SubjectsPage';
 import { ProfilePage } from './pages/profile/ProfilePage';
 import { ResultsPage } from './pages/results/ResultsPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import { AssignmentsPage } from './pages/assignments/AssignmentsPage';
 
 function App() {
   const { isAuthenticated, checkAuth } = useAuthStore();
@@ -82,6 +83,7 @@ function App() {
           <Route path="/attendance/scan" element={<QRScannerPage />} />
           
           {/* Common/Shared Routes Structure */}
+          <Route path="/assignments" element={<AssignmentsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/results" element={<ResultsPage />} />

@@ -67,10 +67,9 @@ class User extends Authenticatable
             return $value;
         }
 
-        // Relative path like "avatars/file.jpg" — build full URL
-        $base = rtrim(config('app.url'), '/');
-
-        return $base.'/storage/'.$value;
+        // Relative path like "avatars/file.jpg" — return as relative URL
+        // This allows Vite's dev server proxy to handle the request, avoiding CORS issues
+        return '/storage/'.$value;
     }
 
     // Helpers

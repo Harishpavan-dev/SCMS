@@ -230,7 +230,7 @@ class DashboardController extends Controller
 
         return [
             'today_classes' => $todayClasses,
-            'total_subjects' => $lecturer->semesterSubjects()->count(),
+            'total_subjects' => $lecturer->subjects()->count(),
             'weekly_attendance' => $this->weeklyAttendance(),
             'notifications' => $this->recentNotifications($user->id),
             'unread_notifications' => Notification::where('user_id', $user->id)

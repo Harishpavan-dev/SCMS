@@ -16,9 +16,13 @@ return new class extends Migration
 
         // 2. Migrate existing data
         if (Schema::hasTable('attendance_sessions')) {
-            DB::statement('UPDATE attendance_records ar 
-                           JOIN attendance_sessions ads ON ar.attendance_session_id = ads.id 
-                           SET ar.class_session_id = ads.class_session_id');
+            if (DB::getDriverName() === 'sqlite') {
+                DB::statement('UPDATE attendance_records SET class_session_id = (SELECT class_session_id FROM attendance_sessions WHERE attendance_sessions.id = attendance_records.attendance_session_id)');
+            } else {
+                DB::statement('UPDATE attendance_records ar 
+                               JOIN attendance_sessions ads ON ar.attendance_session_id = ads.id 
+                               SET ar.class_session_id = ads.class_session_id');
+            }
         }
 
         // 3. Clean up attendance_records

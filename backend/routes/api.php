@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\ResourceController;
 use App\Http\Controllers\Api\ResultController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\SubjectController;
+use App\Http\Controllers\Api\AssignmentController;
 use App\Http\Middleware\JWTAuth;
 use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Support\Facades\Route;
@@ -124,4 +125,12 @@ Route::middleware(JWTAuth::class)->group(function () {
     Route::get('/files', [ResourceController::class, 'fileIndex']);
     Route::post('/files', [ResourceController::class, 'fileStore']);
     Route::delete('/files/{id}', [ResourceController::class, 'fileDestroy']);
+
+    // Assignment Management
+    Route::get('/assignments', [AssignmentController::class, 'index']);
+    Route::get('/assignments/{id}', [AssignmentController::class, 'show']);
+    Route::get('/lecturer/subjects', [AssignmentController::class, 'getLecturerSubjects'])->middleware(RoleMiddleware::class.':lecturer');
+    Route::post('/assignments', [AssignmentController::class, 'store'])->middleware(RoleMiddleware::class.':lecturer');
+    Route::post('/assignments/{id}/submit', [AssignmentController::class, 'submit'])->middleware(RoleMiddleware::class.':student,rep');
+    Route::post('/submissions/{submissionId}/grade', [AssignmentController::class, 'grade'])->middleware(RoleMiddleware::class.':lecturer');
 });

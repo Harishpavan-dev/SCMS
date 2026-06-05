@@ -480,7 +480,7 @@ class AttendanceController extends Controller
             [
                 'marked_at' => now(),
                 'marked_by' => $user->id,
-                'method' => 'direct-qr',
+                'method' => $user->role === 'rep' ? 'rep' : 'manual',
                 'status' => $request->status,
             ]
         );
