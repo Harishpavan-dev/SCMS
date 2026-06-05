@@ -25,11 +25,19 @@ return new class extends Migration
         Schema::table('attendance_records', function (Blueprint $table) {
             // Drop foreign key first
             $table->dropForeign(['attendance_session_id']);
+            
+            // Drop unique key
+            $table->dropUnique(['attendance_session_id', 'student_id']);
+            
+            // Drop column
             $table->dropColumn('attendance_session_id');
 
             // Make class_session_id required now that data is migrated
             // Note: In SQLite (common for tests) change() is tricky, but for MySQL it works.
             $table->unsignedBigInteger('class_session_id')->nullable(false)->change();
+
+            // Add the new unique key
+            $table->unique(['class_session_id', 'student_id']);
         });
 
         // 4. Delete the AttendanceSessions table entirely

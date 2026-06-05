@@ -61,15 +61,16 @@ class User extends Authenticatable
         if (! $value) {
             return null;
         }
-        // If full URL, extract the /storage/... path
-        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
-            $parsed = parse_url($value, PHP_URL_PATH);
 
-            return $parsed ?: $value;
+        // Already a full URL — return as-is
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
         }
 
-        // Relative path like "avatars/file.jpg" — prepend /storage/
-        return '/storage/'.$value;
+        // Relative path like "avatars/file.jpg" — build full URL
+        $base = rtrim(config('app.url'), '/');
+
+        return $base.'/storage/'.$value;
     }
 
     // Helpers

@@ -243,10 +243,16 @@ class AuthController extends Controller
                     $type = strtolower($type[1]);
                     $imageData = base64_decode($imageData);
 
+                    // Delete old avatar file if exists
+                    $oldAvatar = $user->getRawOriginal('avatar');
+                    if ($oldAvatar && Storage::disk('public')->exists($oldAvatar)) {
+                        Storage::disk('public')->delete($oldAvatar);
+                    }
+
                     $fileName = 'avatar_'.$user->id.'_'.time().'.'.$type;
                     Storage::disk('public')->put('avatars/'.$fileName, $imageData);
 
-                    $user->update(['avatar' => config('app.url').'/storage/avatars/'.$fileName]);
+                    $user->update(['avatar' => 'avatars/'.$fileName]);
                 }
             }
 
@@ -255,6 +261,8 @@ class AuthController extends Controller
             }
 
             DB::commit();
+
+            $user->refresh();
 
             return response()->json([
                 'success' => true,
