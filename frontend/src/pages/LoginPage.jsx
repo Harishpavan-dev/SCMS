@@ -57,7 +57,7 @@ export const LoginPage = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full pl-12 pr-4 py-4 bg-transparent text-slate-900 placeholder-slate-400 outline-none text-sm font-medium rounded-2xl"
-                    placeholder="email@atijaffna.lk"
+                    placeholder="Test@gmail.com"
                   />
                 </div>
               </div>

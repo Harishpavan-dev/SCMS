@@ -62,6 +62,7 @@ export const Sidebar = ({ onClose }) => {
       return [
         { label: 'Main', items: [
           { name: 'Dashboard', path: '/dashboard', icon: HomeIcon },
+          { name: 'Attendance Reports', path: '/dashboards/lecturer-dashboard', icon: DocumentChartBarIcon },
           { name: 'Assignments', path: '/assignments', icon: BookOpenIcon },
         ]},
         { label: 'Account', items: [

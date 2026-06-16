@@ -108,6 +108,7 @@ Route::middleware(JWTAuth::class)->group(function () {
     // Lecturer Only
     Route::middleware(RoleMiddleware::class.':lecturer')->group(function () {
         Route::post('/results', [ResultController::class, 'store']);
+        Route::get('/lecturer/attendance-report', [AttendanceController::class, 'getLecturerReport']);
     });
 
     // Student & Rep (Personal stuff)

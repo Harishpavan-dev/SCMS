@@ -228,6 +228,29 @@ class DashboardController extends Controller
             ->orderBy('start_time')
             ->get();
 
+        $subjects = $lecturer->subjects()->with('semester')->get()->map(function($subject) use ($lecturer) {
+            $sessions = ClassSession::where('subject_id', $subject->id)
+                ->where('lecturer_id', $lecturer->id)
+                ->count();
+            
+            $present = AttendanceRecord::whereHas('classSession', function($q) use ($subject, $lecturer) {
+                $q->where('subject_id', $subject->id)->where('lecturer_id', $lecturer->id);
+            })->where('status', 'present')->count();
+            
+            $total = AttendanceRecord::whereHas('classSession', function($q) use ($subject, $lecturer) {
+                $q->where('subject_id', $subject->id)->where('lecturer_id', $lecturer->id);
+            })->count();
+            
+            return [
+                'id' => $subject->id,
+                'name' => $subject->name,
+                'code' => $subject->code,
+                'semester' => $subject->semester?->name,
+                'total_sessions' => $sessions,
+                'avg_percentage' => $total > 0 ? round(($present / $total) * 100, 1) : 0,
+            ];
+        });
+
         return [
             'today_classes' => $todayClasses,
             'total_subjects' => $lecturer->subjects()->count(),
@@ -235,6 +258,7 @@ class DashboardController extends Controller
             'notifications' => $this->recentNotifications($user->id),
             'unread_notifications' => Notification::where('user_id', $user->id)
                 ->where('is_read', false)->count(),
+            'assigned_subjects' => $subjects,
         ];
     }
 

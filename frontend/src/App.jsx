@@ -24,6 +24,7 @@ import { StudentsPage } from './pages/students/StudentsPage';
 import { StudentDashboard } from './pages/dashboards/StudentDashboard';
 import { StudentIdCard } from './pages/students/StudentIdCard';
 import { HodDashboard } from './pages/dashboards/HodDashboard';
+import { LecturerDashboard } from './pages/dashboards/LecturerDashboard';
 import { SubjectsPage } from './pages/subjects/SubjectsPage';
 import { ProfilePage } from './pages/profile/ProfilePage';
 import { ResultsPage } from './pages/results/ResultsPage';
@@ -69,6 +70,7 @@ function App() {
           {/* Role-Specific Dashboards */}
           <Route path="/dashboards/student-dashboard" element={<StudentDashboard />} />
           <Route path="/dashboards/hod-dashboard" element={<HodDashboard />} />
+          <Route path="/dashboards/lecturer-dashboard" element={<LecturerDashboard />} />
           {/* Attendance Routes */}
           <Route path="/attendance" element={<RepAttendancePage />} />
           <Route path="/rep-login" element={<RepAttendancePage />} />

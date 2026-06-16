@@ -541,4 +541,113 @@ class AttendanceController extends Controller
             ],
         ]);
     }
+
+    public function getLecturerReport(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $lecturer = $user->lecturer;
+        if (!$lecturer) {
+            return response()->json(['success' => false, 'message' => 'Lecturer profile not found.'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'subject_id' => 'required|exists:subjects,id',
+            'batch_id'   => 'nullable|exists:batches,id',
+            'from_date'  => 'nullable|date',
+            'to_date'    => 'nullable|date',
+            'search'     => 'nullable|string',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        // Verify this subject is assigned to lecturer
+        $subject = $lecturer->subjects()->where('subjects.id', $request->subject_id)->first();
+        if (!$subject) {
+            return response()->json(['success' => false, 'message' => 'Subject not assigned to you.'], 403);
+        }
+
+        // Get class sessions for this subject (optionally filtered by batch + date range)
+        $sessionQuery = ClassSession::where('subject_id', $request->subject_id);
+        if ($request->batch_id) {
+            $sessionQuery->where('batch_id', $request->batch_id);
+        }
+        if ($request->from_date) {
+            $sessionQuery->whereDate('date', '>=', $request->from_date);
+        }
+        if ($request->to_date) {
+            $sessionQuery->whereDate('date', '<=', $request->to_date);
+        }
+        $sessions = $sessionQuery->orderBy('date')->get();
+        $sessionIds = $sessions->pluck('id');
+        $totalSessions = $sessions->count();
+
+        // Get students from the relevant batches
+        $batchIds = $request->batch_id ? [$request->batch_id] : $sessions->pluck('batch_id')->unique();
+        
+        $studentQuery = Student::with('user');
+        
+        if (empty($batchIds) || (is_object($batchIds) && $batchIds->isEmpty())) {
+            // Fallback to all active students in the subject's semester
+            $studentQuery->where('current_semester_id', $subject->semester_id)
+                ->where('status', 'active');
+        } else {
+            $studentQuery->whereIn('batch_id', $batchIds);
+        }
+        
+        if ($request->search) {
+            $searchTerm = '%' . $request->search . '%';
+            $studentQuery->where(function($q) use ($searchTerm) {
+                $q->whereHas('user', fn($sq) => $sq->where('name', 'like', $searchTerm))
+                  ->orWhere('registration_number', 'like', $searchTerm);
+            });
+        }
+        
+        $students = $studentQuery->get();
+
+        // Get all attendance records for these sessions
+        $allRecords = AttendanceRecord::whereIn('class_session_id', $sessionIds)
+            ->get()->groupBy('student_id');
+
+        $studentData = $students->map(function($student) use ($allRecords, $sessions, $totalSessions) {
+            $stuRecords = $allRecords->get($student->id, collect());
+            $present = $stuRecords->where('status', 'present')->count();
+            $absent = $stuRecords->where('status', 'absent')->count();
+            $percentage = $totalSessions > 0 ? round(($present / $totalSessions) * 100, 1) : 0;
+
+            $dateRecords = $sessions->map(fn($s) => [
+                'date' => $s->date ? $s->date->format('Y-m-d') : null,
+                'session_id' => $s->id,
+                'status' => $stuRecords->firstWhere('class_session_id', $s->id)?->status ?? 'unmarked',
+            ]);
+
+            return [
+                'id' => $student->id,
+                'name' => $student->user->name,
+                'registration_number' => $student->registration_number,
+                'present' => $present,
+                'absent' => $absent,
+                'total' => $totalSessions,
+                'percentage' => $percentage,
+                'at_risk' => $percentage < 75 && $totalSessions > 0,
+                'date_records' => $dateRecords,
+            ];
+        })->sortBy('registration_number')->values();
+
+        $avgPercentage = $studentData->count() > 0 ? round($studentData->avg('percentage'), 1) : 0;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'subject' => ['id' => $subject->id, 'name' => $subject->name, 'code' => $subject->code],
+                'stats' => ['total_sessions' => $totalSessions, 'avg_percentage' => $avgPercentage],
+                'students' => $studentData,
+                'sessions' => $sessions->map(fn($s) => [
+                    'id' => $s->id,
+                    'date' => $s->date ? $s->date->format('Y-m-d') : null
+                ]),
+            ],
+        ]);
+    }
 }
+
