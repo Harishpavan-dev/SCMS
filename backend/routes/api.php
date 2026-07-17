@@ -4,7 +4,6 @@ use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ResourceController;
-use App\Http\Controllers\Api\ResultController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\SubjectController;
 use App\Http\Controllers\Api\AssignmentController;
@@ -58,7 +57,6 @@ Route::middleware(JWTAuth::class)->group(function () {
         Route::get('/attendance/hod-analytics', [AttendanceController::class, 'getHodAnalytics']);
         Route::get('/attendance/report', [AttendanceController::class, 'getReport']);
         Route::post('/attendance/sessions/{id}/close', [AttendanceController::class, 'closeSession']);
-        Route::post('/results/bulk', [ResultController::class, 'bulkStore']);
     });
 
     // --- STUDENT SELF-SERVICE ---
@@ -100,27 +98,17 @@ Route::middleware(JWTAuth::class)->group(function () {
         Route::post('/lecturers', [ResourceController::class, 'lecturerStore']);
         Route::put('/lecturers/{id}', [ResourceController::class, 'lecturerUpdate']);
         Route::delete('/lecturers/{id}', [ResourceController::class, 'lecturerDestroy']);
-
-        // Result Publishing
-        Route::post('/results/publish', [ResultController::class, 'publish']);
     });
 
     // Lecturer Only
     Route::middleware(RoleMiddleware::class.':lecturer')->group(function () {
-        Route::post('/results', [ResultController::class, 'store']);
         Route::get('/lecturer/attendance-report', [AttendanceController::class, 'getLecturerReport']);
     });
 
-    // Student & Rep (Personal stuff)
-    Route::middleware(RoleMiddleware::class.':student,rep,lecturer,admin,hod')->group(function () {
-        Route::get('/students/{id}/results', [StudentController::class, 'getResults']);
-        Route::get('/students/{id}/gpa', [ResultController::class, 'studentGPA']);
-    });
 
     // Shared / Read-Only
     Route::get('/students/{id}/qr', [StudentController::class, 'getQRCode']);
     Route::get('/class-sessions', [ResourceController::class, 'classSessionIndex']);
-    Route::get('/results', [ResultController::class, 'index']);
 
     // File Management
     Route::get('/files', [ResourceController::class, 'fileIndex']);

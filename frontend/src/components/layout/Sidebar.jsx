@@ -78,7 +78,6 @@ export const Sidebar = ({ onClose }) => {
           { name: 'Assignments', path: '/assignments', icon: ClipboardDocumentCheckIcon },
           { name: 'Mark Attendance', path: '/attendance', icon: ClipboardDocumentCheckIcon },
           { name: 'My Attendance', path: '/attendance/my', icon: ChartBarIcon },
-          { name: 'Academic Results', path: '/results', icon: DocumentChartBarIcon },
         ]},
         { label: 'Identity', items: [
           { name: 'My ID Card', path: '/my-id-card', icon: IdentificationIcon },
@@ -95,7 +94,6 @@ export const Sidebar = ({ onClose }) => {
           { name: 'Dashboard', path: '/dashboard', icon: HomeIcon },
           { name: 'Assignments', path: '/assignments', icon: ClipboardDocumentCheckIcon },
           { name: 'My Attendance', path: '/attendance/my', icon: ChartBarIcon },
-          { name: 'Academic Results', path: '/results', icon: DocumentChartBarIcon },
         ]},
         { label: 'Identity', items: [
           { name: 'My ID Card', path: '/my-id-card', icon: IdentificationIcon },
