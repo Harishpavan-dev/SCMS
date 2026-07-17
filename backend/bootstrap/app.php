@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureClassTime;
 use App\Http\Middleware\JWTAuth;
 use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Http\Middleware\HandleCors;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -19,13 +20,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Prepend HandleCors to the global middleware stack so CORS headers
+        // are applied to every request (including preflight OPTIONS).
+        $middleware->prepend(HandleCors::class);
+
         $middleware->alias([
             'auth.jwt' => JWTAuth::class,
             'role' => RoleMiddleware::class,
             'class.time' => EnsureClassTime::class,
         ]);
-
-        // Since we removed Cors middleware file, we use laravel 11's built-in CORS configuration via config/cors.php
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->shouldRenderJsonWhen(function (Request $request, Throwable $e) {
